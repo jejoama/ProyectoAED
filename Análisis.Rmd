@@ -199,13 +199,13 @@ anim_save("brecha_paro.gif", animation = animacion)
 
 browseURL("brecha_paro.gif")
 ```
+## Composición del mercado laboral 
 
+En este bloque de código se genera un gráfico exploratorio con el propósito de comprobar la visualización de la composición del mercado laboral antes de automatizar el proceso para todos los años. Para ello, se filtran los datos del año 2024 y se seleccionan las variables relevantes relacionadas con el estado laboral (*Activos, Ocupados, Parados e Inactivos*), junto con la edad y el sexo. Posteriormente, mediante la función `pivot_longer()`, se reorganiza la tabla a formato largo, lo que permite representar las distintas categorías laborales como valores dentro de una misma variable (*Estado*), facilitando así la creación de un gráfico apilado en *ggplot2*.
 
+El gráfico resultante muestra la distribución proporcional de la población según su situación laboral y grupo de edad, diferenciando entre hombres y mujeres mediante `facet_wrap(~Sexo)`. Se emplea `geom_col(position = "fill")` para que las barras representen proporciones y no valores absolutos, y se aplican ajustes estéticos para mejorar la legibilidad, como la rotación de etiquetas del eje X y el uso de `theme_minimal()`. Este gráfico sirvió como prueba inicial para evaluar la claridad y estructura de la visualización antes de desarrollar la función que posteriormente generó automáticamente el mismo tipo de gráfico para todos los años del periodo analizado.
 
 ```{r}
-head(datos)
-
-
 datos_composicion_2024<- datos %>% 
   filter(Periodo==2024) %>% 
   select(Periodo,Edad,Sexo,Activos,Ocupados,Parados,Inactivos) %>% 
@@ -223,11 +223,10 @@ datos_composicion_2024 %>%
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   facet_wrap(~Sexo)
-
-
-head(mtcars)
 ```
+Tras la comprobación inicial con los datos de 2024, se elaboró este bloque de código para automatizar la generación del mismo tipo de gráfico para todos los años del conjunto de datos. Para ello, se utiliza la función `lapply()`, que aplica el mismo procedimiento de visualización a cada año contenido en la variable `años`. Dentro de la función, los datos se filtran por periodo y se representa la composición del mercado laboral mediante `geom_col(position = "fill")`, mostrando la proporción de cada estado laboral (ocupados, parados e inactivos) dentro de cada grupo de edad.
 
+El código utiliza `facet_wrap(~Sexo)` para mostrar en paneles separados la información correspondiente a hombres y mujeres. El título de cada gráfico se personaliza dinámicamente con el año correspondiente mediante `paste()`. Este procedimiento permitió obtener una serie de gráficos anuales, facilitando así el análisis comparativo de la evolución de la estructura del mercado laboral a lo largo del tiempo y entre sexos.
 
 ```{r}
 
@@ -252,12 +251,13 @@ graficos_composicion_por_año <- lapply(años, function(año) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1))+
     facet_wrap(~Sexo)#Añadir o quitar según queramos comparar hombres y mujeres o no 
 })
-#Hola
 
 graficos_composicion_por_año
-
 ```
+Del análisis de los gráficos se observa una estructura bastante estable del mercado laboral por edad y sexo a lo largo del tiempo, con ligeras variaciones asociadas a los ciclos económicos. En ambos sexos, el grupo central de edad (30-54 años) concentra la mayor proporción de personas ocupadas, mientras que los extremos —jóvenes y mayores— presentan una mayor presencia de inactivos. Las mujeres muestran sistemáticamente una menor proporción de ocupación y una mayor de inactividad en comparación con los hombres, aunque esta diferencia tiende a reducirse en los años más recientes. Asimismo, la proporción de personas paradas es más significativa en los grupos jóvenes, reflejando una mayor vulnerabilidad del empleo juvenil. En conjunto, los gráficos ponen de manifiesto que, pese a los avances en participación femenina y la estabilidad general del empleo en edades medias, persisten desigualdades de género e importantes diferencias intergeneracionales dentro del mercado laboral.
 
+
+En este bloque de código se genera una animación en formato GIF que muestra la evolución de la composición del mercado laboral por grupo de edad y sexo a lo largo del tiempo. Siguiendo el mismo procedimiento utilizado en el ejercicio anterior, se crea primero el gráfico base con ggplot2 y posteriormente se aplica la función `animate()` del paquete gganimate, especificando el número de fotogramas y la velocidad de transición. Finalmente, la animación se guarda mediante `anim_save()` como un archivo GIF titulado “composicion_mercado.gif”.
 ```{r}
 library(gifski)
 graph1 <- ggplot(datos_composicion, 
@@ -276,18 +276,17 @@ graph1 <- ggplot(datos_composicion,
   transition_time(Periodo) +
   ease_aes('linear')
 
-
-
-# 1️⃣ Crear la animación desde el gráfico
 animacion <- animate(graph1, nframes = 100, fps = 10, renderer = gifski_renderer())
 
-# 2️⃣ Guardarla
 anim_save("composicion_mercado.gif", animation = animacion)
 
 ```
+##Proporción de parados
+En este bloque de código se genera una serie de gráficos que representan la distribución del paro dentro de cada sexo por grupo de edad y año. Para ello, se utiliza una estructura, que permite crear automáticamente un gráfico por cada año disponible en el conjunto de datos. Primero, los datos se filtran por periodo y se agrupan por sexo y año, tras lo cual se calcula la proporción que representa cada grupo de edad dentro del total de personas paradas del mismo sexo (`Parados / sum(Parados)`).
+
+A continuación, se construyen los gráficos con ggplot2, empleando `geom_col(position = "dodge")` para comparar visualmente la distribución entre hombres y mujeres dentro de cada grupo de edad. El objetivo de este análisis es observar cómo se reparte el desempleo dentro de cada sexo a lo largo del tiempo, identificando posibles diferencias estructurales entre hombres y mujeres en función de la edad. De esta manera, se obtiene una visión más detallada del peso relativo de cada grupo de edad en el total de personas paradas de cada sexo y su evolución temporal.
 
 
-La siguiente gráfica muestra del total de parados por sexo que proporcion de esos parados se encuentran en cada grupo de edad
 ```{r}
 graficos_parados_proporcion_por_año<- lapply(años, function(año){
 datos %>%
@@ -310,6 +309,11 @@ datos %>%
 graficos_parados_proporcion_por_año
 
 ```
+En estas gráficas se aprecia cómo la distribución del paro dentro de cada sexo ha cambiado en los últimos años, influida por transformaciones estructurales del mercado laboral y demográficas. La elevación progresiva de la edad de jubilación y el retraso en la salida definitiva del mercado laboral han provocado un aumento en la proporción de personas activas en edades más avanzadas, lo que se traduce también en una mayor representación del paro entre los grupos de 55 años o más. Esto indica que el desempleo ya no es un fenómeno concentrado exclusivamente en edades intermedias, sino que se extiende también hacia los trabajadores de mayor edad, quienes permanecen más tiempo en el mercado laboral. Por el contrario, los grupos más jóvenes (de 16 a 24 años) han reducido su presencia relativa en el total de personas desempleadas, debido principalmente a una incorporación más tardía al mercado laboral como resultado del alargamiento de la etapa educativa y del aumento de la formación superior.
+
+En cuanto al análisis por género, se observa que la distribución del paro dentro de cada sexo mantiene ciertas similitudes, pero también muestra matices importantes. En los grupos de edad intermedia (25-54 años), las mujeres tienden a concentrar una mayor proporción del desempleo dentro de su propio sexo, lo que refleja una persistente desigualdad estructural en el acceso y la estabilidad del empleo femenino, especialmente en etapas donde la conciliación familiar y laboral juega un papel determinante. Sin embargo, entre los hombres, el paro se distribuye de forma algo más homogénea entre los distintos grupos de edad, con un incremento más visible en las edades avanzadas, vinculado al impacto de los sectores más cíclicos (como la construcción o la industria) y a la dificultad de reinserción laboral tras la pérdida del empleo.
+
+En conjunto, estas gráficas ponen de manifiesto un proceso de envejecimiento del desempleo y una convergencia progresiva entre hombres y mujeres en la estructura interna del paro, aunque todavía persisten diferencias derivadas de los roles laborales y sociales tradicionales. Mientras los hombres mayores ganan peso dentro del paro total por el retraso en la jubilación, las mujeres siguen mostrando una mayor vulnerabilidad en las edades centrales, reflejando las desigualdades de género que aún caracterizan el mercado laboral español.
 
 
 
