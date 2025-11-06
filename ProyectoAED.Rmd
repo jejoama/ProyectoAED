@@ -43,6 +43,8 @@ ggplot(df_p_sexo, aes(x = Periodo, y = tasa_actividad, color = Sexo)) + geom_lin
 
 
 ```
+
+
 ```{r}
 cat("La gráfica enseña la evolución de la tasa de actividad en España entre los años 2006 y 2024, diferenciada por sexo. Por un lado, la proporción de hombres es mucho mayor a la de mujeres, cosa que va ligada a que los hombres siempre han tenido mayor participicaion en muchos mas sectores, como lo puede ser la construcción, y a que las mujeres se ligan mas al cuidado familiar.
     Pese a esto, la actividad masculina en 2008 se desacelera economicamnete, esto provocado por la crisis financiera que se vivió en la epoca. Es en 2017/18 que comienza su recuperación, pero nunca a los niveles previos a la crisis. En 2020, debido al Covid-19, se observa otra caida en la tendencía (porque el Covid-19 afectó a muchos sectores, como la industría por ejemplo). Aunque se observa también su recuperació, tampoco volvió a los nieveles previos de la crisis de 2008
