@@ -60,7 +60,7 @@ pacman::p_load(
 
 
 # Introducción
-Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos de la Encuesta de Población Activa (EPA), centrándose en la evolución histórica de la brecha de género en el mercado laboral español. Utilizando el ecosistema `tidyverse`, el estudio comienza con una limpieza y transformación de los datos empleando `dplyr` y el cálculo de Tasa de paro, actividad y ocupación, claves para el análisis. Seguido de la visualización con `ggplot2` para ilustrar la evolución temporal. Por último, se validan los resultados con pruebas de *t Student* para confirmar la significancia estadística de los resutlados.
+Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos de la Encuesta de Población Activa (EPA), centrándose en la evolución histórica de la brecha de género en el mercado laboral español. Utilizando el ecosistema `tidyverse`, el estudio comienza con una limpieza y transformación de los datos empleando `dplyr` y el cálculo de Tasa de paro, actividad y ocupación, claves para el análisis. Seguido de la visualización con `ggplot2` para ilustrar la evolución temporal. Por último, se validan los resultados con pruebas de *t Student* para confirmar la significancia estadística de los resultados.
 
 
 # Exploración inicial
@@ -80,7 +80,7 @@ Las variables del dataframe original son: Sexo, Edad, Relación con la actividad
 
 ## Valores faltantes
 
-Los valores ausentes se encuentran concentrados en la variable `Total`.
+Los valores NA se encuentran concentrados en la variable `Total`.
 
 ```{r,echo = FALSE}
 df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% filter(is.na(Total)) %>% ggplot(aes(x=Situacion_Laboral))+geom_bar(aes(fill=Edad))+labs(
@@ -92,35 +92,50 @@ df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% f
   theme_minimal()
 ```
 
-Se observa que los datos faltantes son del tipo MAR, valores faltantes vienen asociados a grupos de edad altos y cuya relación con la actividad económica es "Parados que buscan primer empleo" o "Parados".
+Se observa que los datos faltantes son del tipo MAR (Missing At Random). La ausencia de datos viene asociada a grupos de edad altos con una relación con la actividad económica de "Parados que buscan primer empleo" o "Parados". Esta dependencia permite concluir que este valor NA se debe a que es imposible, o extremandamente improbable, que una persona en ese rango de edad busque su primer empleo.
 
 
 # Definición de variables
 
-El valor de la columna **Total** viene definido con la siguiente expresión:
+El valor de la columna `Total` viene definido con la siguiente expresión:
+\begin{equation}
+\text{Total}=\text{Activos}+\text{Inactivos}
+\end{equation}
 
-$$\text{Total}=\text{Activos}+\text{Inactivos}$$
 Y los **Activos** se dividen en Ocupados y Parados:
+\begin{equation}
+\text{Activos}=\text{Ocupados}+\text{Parados}
+\end{equation}
 
-$$\text{Activos}=\text{Ocupados}+\text{Parados}$$
 ## Fórmulas para el análisis (Tasas)
 
 Las tasas permiten normalizar los datos y son la base para el análisis de brechas y series temporales:
 
 
-
 La **tasa de paro** mide la proporción de la población activa que está desempleada:
 
-$$\text{Tasa de paro}=\frac{\text{Parados}}{\text{Activos}} \cdot 100$$
+\begin{equation}
+\text{Tasa de paro}=\frac{\text{Parados}}{\text{Activos}} \cdot 100
+\end{equation}
+
+
 
 La **tasa de actividad** mide la participación de una población en el mercado laboral:
+\begin{equation}
+\text{Tasa de actividad}=\frac{\text{Activos}}{\text{Total}} \cdot 100
+\end{equation}
 
-$$\text{Tasa de actividad}=\frac{\text{Activos}}{\text{Total}} \cdot 100$$
 La **tasa de ocupación** muestra qué parte de la población total de referencia tiene un empleo:
 
-$$\text{Tasa de ocupación}=\frac{\text{Ocupados}}{\text{Total}} \cdot 100$$
+\begin{equation}
+\text{Tasa de ocupación}=\frac{\text{Ocupados}}{\text{Total}} \cdot 100
+\end{equation}
 
-# Limpieza
+
+
+# Limpieza de los datos
+
+La limpieza de los datos a consistido en estos puntos:
 
 - **Renombrar columnas**: Utilizando `rename()` para acortar `"Relación con la actividad económica"` por ` "Situacion_Laboral"` para simplificar el manejo de columnas.
 
@@ -130,9 +145,9 @@ $$\text{Tasa de ocupación}=\frac{\text{Ocupados}}{\text{Total}} \cdot 100$$
 
 - **Renombrar variables**: Se renombra la columna `"parados que buscan primer empleo"` a un formato más corto `r "Parados_sin_exp"`
 
-- **Imputación de NA a 0**: Los valores faltantes se concentran en categorías como Personas mayores de 65 en paro o que buscan su primer empleo. El INE suprime el dato por ser un valor insignificante, por lo que se opta por remplazar los valores nulos a 0 para no perder el resto de información válida de la instancia.
+- **Imputación de NA a 0**: Los valores faltantes se concentran en categorías como Personas mayores en paro o que buscan su primer empleo. El INE suprime el dato por ser un valor insignificante, por lo que se opta por remplazar los valores nulos a 0 para no perder el resto de información válida de la instancia.
 
-- **Creación de tasas**: Se añaden las columnas `Tasa_paro`, `Tasa_actividad` y `Tasa_ocupacion` utilizando `mutate()` y las expresiones de la EPA.
+- **Creación de tasas**: Se añaden las columnas `Tasa_paro`, `Tasa_actividad` y `Tasa_ocupacion` utilizando `mutate()` y las expresiones de la EPA (3), (4) y (5).
 
 - **Ordenación en factores**: Se ordena la columna `Edad` como un factor ordinal y la columna `Sexo` como factor nominal.
 
@@ -161,9 +176,6 @@ df_clean<-df %>%
       )
   )
 ```
-
-
-Se comprueba que la limpieza esté bien hecha, primero viendo si el formato de los datos es el adecuado y asegurando que no quedan valores faltantes.
 
 
 ```{r,echo = FALSE}
