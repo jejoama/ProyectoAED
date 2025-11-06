@@ -80,9 +80,9 @@ Las variables del dataframe original son: Sexo, Edad, Relación con la actividad
 
 ## Valores faltantes
 
-Los valores NA se encuentran concentrados en la variable `Total`.
+Los valores NA se encuentran concentrados en la variable `Total`, mostrando una ausencia específica en las categorías de situación laboral relacionadas con el desempleo com ose muestra en la siguiente figura:
 
-```{r,echo = FALSE}
+```{r,echo = FALSE,fig.width=6, fig.height=4, out.width="100%"}
 df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% filter(is.na(Total)) %>% ggplot(aes(x=Situacion_Laboral))+geom_bar(aes(fill=Edad))+labs(
     title = "Frecuencia de los registros faltantes NA",
     subtitle = "Distribución por Situación Laboral y la edad",
@@ -234,7 +234,7 @@ df_p_sexo <- df_clean %>% group_by(Periodo, Sexo) %>% summarise(tasa_actividad =
 
 ```
 
-```{r, echo=FALSE}
+```{r, fig.width=6, fig.height=4, out.width="75%",echo=FALSE}
 # Gráfica 
 ggplot(df_p_sexo, aes(x = Periodo, y = tasa_actividad, color = Sexo)) + geom_line(linewidth = 2) +  labs(title = "Tasa de actividad según sexo (2006–2024)", x = "Año", y = "% Tasa de actividad",color = "Sexo") + theme_minimal()  
 
