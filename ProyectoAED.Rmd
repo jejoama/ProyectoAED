@@ -40,10 +40,6 @@ knitr::opts_chunk$set(
 rm(list=ls())
 ```
 
-# Introducción
-Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos de la Encuesta de Población Activa (EPA), centrándose en la evolución histórica de la brecha de género en el mercado laboral español. Utilizando el ecosistema `tidyverse`, el estudio comienza con una limpieza y transformación de los datos empleando `dplyr` y el cálculo de Tasa de paro, actividad y ocupación, claves para el análisis. Seguido de la visualización con `ggplot2` para ilustrar la evolución temporal. Por último, se validan los resultados con pruebas de *t Student* para confirmar la significancia estadística de los resutlados.
-
-## Carga de Librerías
 
 ```{r,echo = FALSE}
 if (!require("pacman")) install.packages("pacman")
@@ -61,6 +57,11 @@ pacman::p_load(
 )
 ```
 
+
+# Introducción
+Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos de la Encuesta de Población Activa (EPA), centrándose en la evolución histórica de la brecha de género en el mercado laboral español. Utilizando el ecosistema `tidyverse`, el estudio comienza con una limpieza y transformación de los datos empleando `dplyr` y el cálculo de Tasa de paro, actividad y ocupación, claves para el análisis. Seguido de la visualización con `ggplot2` para ilustrar la evolución temporal. Por último, se validan los resultados con pruebas de *t Student* para confirmar la significancia estadística de los resutlados.
+
+
 # Exploración inicial
 
 ## Importación y verificación inicial
@@ -72,7 +73,7 @@ df<-read_delim("data/65948.csv", delim = "\t", escape_double = FALSE, na = "..",
                trim_ws = TRUE,locale = locale(decimal_mark = ","))
 ```
 
-Las variables del dataframe original son Sexo, Edad, Relación con la actividad económica, Periodo y Total.
+Las variables del dataframe original son: Sexo, Edad, Relación con la actividad económica, Periodo y Total.
 
 ## Valores faltantes
 
@@ -250,10 +251,6 @@ ggplot(df_paro_sexo, aes(x = Periodo, y = tasa_paro, color = Sexo)) + geom_line(
 
 El gráfico a continuación representa la evolución de la brecha de paro total.
 ```{r, echo=FALSE}
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-
 # 1º crear una tabla con la variable brecha_paro 
 brecha <- df_clean %>% 
   select(Periodo, Edad,Sexo,Tasa_paro) %>% 
