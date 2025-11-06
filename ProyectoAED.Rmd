@@ -179,6 +179,12 @@ df_clean<-df %>%
 
 
 Se comprueba que la limpieza esté bien hecha, primero viendo si el formato de los datos es el adecuado y asegurando que no quedan valores faltantes.
+
+```{r}
+x <- 1+1
+```
+
+
 ```{r,  tidy=TRUE, results='markup',,echo = FALSE}
 str(df_clean)
 ```
