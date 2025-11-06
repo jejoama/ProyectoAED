@@ -53,7 +53,8 @@ pacman::p_load(
   visdat,
   treemapify,
   gganimate,
-  gifski
+  gifski,
+  knitr
 )
 ```
 
@@ -488,8 +489,7 @@ df_clean %>% group_by(Sexo) %>% summarise(sd_ocupados = sd(Ocupados, na.rm = TRU
 ```
 
 ```{r}
-library(dplyr)
-library(knitr)
+
 
 # Calcular desviación estándar y varianza por sexo
 tabla_dispersion <- df_clean %>%
@@ -507,27 +507,12 @@ kable(tabla_dispersion, caption = "Desviación estándar y varianza de ocupados 
 
 
 
-```{r, echo=FALSE}
-df_clean %>%
-  group_by(Sexo) %>%
-  summarise(media_ocupados = mean(Ocupados, na.rm = TRUE),
-            media_inactivos = mean(Inactivos, na.rm = TRUE)) %>%
-  summarise(brecha_ocup = diff(media_ocupados),
-            brecha_inact = diff(media_inactivos))
-
-```
 
 
 ```{r,echo = FALSE}
-edades_focales <- c(
-  "25-29",
-  "30-34",
-  "35-39",
-  "40-44",
-  "45-49",
-  "50-54"
-)
-t.test(Tasa_ocupacion ~ Sexo, data = df_clean%>% filter(Periodo == 2024,Edad%in%edades_focales))
+
+t.test(Tasa_actividad ~ Sexo, data = df_clean)#%>% filter(Periodo == 2024,Edad%in%edades_focales))
+
 ```
 
 
