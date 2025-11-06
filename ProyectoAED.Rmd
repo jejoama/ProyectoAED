@@ -1,0 +1,270 @@
+---
+title: Evolución de la actividad, ocupación para grupos de edad mayores de 16 años
+author:
+  - name: Jeremy Joel Aguilar Marin
+  - name: Jose Aguilar Milla
+  - name: Javier Herrero Pérez
+
+journal: notspecified 
+type: article
+status: submit
+# front matter
+simplesummary: |
+  A Simple summary goes here.
+abstract: |
+
+
+keywords: |
+  keyword 1; keyword 2; keyword 3 (list three to ten pertinent keywords specific 
+  to the article, yet reasonably common within the subject discipline.).
+# back matter
+
+bibliography: mybibfile.bib
+endnotes: false
+output: 
+  rticles::mdpi_article:
+    extra_dependencies: longtable
+
+---
+
+
+
+
+```{r,echo = FALSE}
+rm(list=ls())
+```
+
+# Introducción
+Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos de la Encuesta de Población Activa (EPA), centrándose en la evolución histórica de la brecha de género en el mercado laboral español. Utilizando el ecosistema `tidyverse`, el estudio comienza con una limpieza y transformación de los datos empleando `dplyr` y el cálculo de Tasa de paro, actividad y ocupación, claves para el análisis. Seguido de la visualización con `ggplot2` para ilustrar la evolución temporal. Por último, se validan los resultados con pruebas de *t Student* para confirmar la significancia estadística de los resutlados.
+
+## Carga de Librerías
+
+```{r,echo = FALSE}
+# Manejo de datos
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(forcats)
+
+# Visualización
+library(ggplot2)
+library(visdat)
+library(treemapify)
+library(gganimate)
+library(gifski)
+```
+
+# Exploración inicial
+
+## Importación y verificación inicial
+
+- **Codificación e importación**: Se verifica la codificación y se importa el archivo CSV delimitado por tabulaciones, se indica que el separador decimal es la coma y que los valores *NA* están codificados como `".."`
+
+```{r,echo = FALSE}
+archivo<-"data/65948.csv"
+guess_encoding(archivo)
+```
+
+```{r,echo = FALSE}
+df<-read_delim(archivo, delim = "\t", escape_double = FALSE, na = "..", 
+               trim_ws = TRUE,locale = locale(decimal_mark = ","))
+```
+
+```{r,echo = FALSE}
+head(df)
+```
+
+
+Se comprueba la estructura inicial de los datos
+
+```{r,echo = FALSE}
+str(df)
+```
+
+## Valores faltantes
+
+Con el objetivo de ver la cantidad de los datos faltantes la variable que tiene estos datos se utiliza la siguiente función: 
+
+```{r,echo = FALSE}
+vis_miss(df %>% rename(Situacion_Laboral = "Relación con la actividad económica"))+theme(
+    axis.text.x = element_text(hjust = 1.2), 
+    plot.margin = unit(c(1, 1, 1, 1), "cm") 
+  )
+```
+
+```{r,echo = FALSE}
+sapply(df,function(x) sum(is.na(x)))
+```
+
+Todos los valores ausentes se encuentran en `Total`
+
+```{r,echo = FALSE}
+df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% filter(is.na(Total)) %>% ggplot(aes(x=Situacion_Laboral))+geom_bar(aes(fill=Edad))+labs(
+    title = "Frecuencia de los registros faltantes NA",
+    subtitle = "Distribución por Situación Laboral y la edad",
+    y = "Valores faltantes", # Quitamos la etiqueta redundante del eje Y
+    x = "Número de Registros con NA"
+  ) +
+  theme_minimal()
+```
+
+Se observa que los valores faltantes vienen asociados a grupos de edad altos y cuya relación con la actividad económica es "Parados que buscan primer empleo" o "Parados".
+
+
+# Definición de variables
+
+El valor de la columna **Total** viene definido con la siguiente expresión:
+
+$$\text{Total}=\text{Activos}+\text{Inactivos}$$
+Y los **Activos** se dividen en Ocupados y Parados:
+
+$$\text{Activos}=\text{Ocupados}+\text{Parados}$$
+## Fórmulas para el análisis (Tasas)
+
+Las tasas permiten normalizar los datos y son la base para el análisis de brechas y series temporales:
+
+
+
+La **tasa de paro** mide la proporción de la población activa que está desempleada:
+
+$$\text{Tasa de paro}=\frac{\text{Parados}}{\text{Activos}} \cdot 100$$
+
+La **tasa de actividad** mide la participación de una población en el mercado laboral:
+
+$$\text{Tasa de actividad}=\frac{\text{Activos}}{\text{Total}} \cdot 100$$
+La **tasa de ocupación** muestra qué parte de la población total de referencia tiene un empleo:
+
+$$\text{Tasa de ocupación}=\frac{\text{Ocupados}}{\text{Total}} \cdot 100$$
+
+# Limpieza
+
+- **Renombrar columnas**: Utilizando `rename()` para acortar `"Relación con la actividad económica"` por ` "Situacion_Laboral"` para simplificar el manejo de columnas.
+
+- **Filtrado de doble conteo**: Se eliminan las instancias donde las variables representan la suma de otras instancias (`Sexo="Ambos sexos"` y `Edad="Total"`) para evitar doble conteo y así verificar que cada registro sea una observación única.
+
+- **Se aplica `pivot_wider()`** utilizando los valores de la columna `Situacion_Laboral` para crear las nuevas columnas (`names_from`) y los valores numéricos de la columna `Total`.
+
+- **Renombrar variables**: Se renombra la columna `"parados que buscan primer empleo"` a un formato más corto `r "Parados_sin_exp"`
+
+- **Imputación de NA a 0**: Los valores faltantes se concentran en categorías como Personas mayores de 65 en paro o que buscan su primer empleo. El INE suprime el dato por ser un valor insignificante, por lo que se opta por remplazar los valores nulos a 0 para no perder el resto de información válida de la instancia.
+
+- **Creación de tasas**: Se añaden las columnas `Tasa_paro`, `Tasa_actividad` y `Tasa_ocupacion` utilizando `mutate()` y las expresiones de la EPA.
+
+- **Ordenación en factores**: Se ordena la columna `Edad` como un factor ordinal y la columna `Sexo` como factor nominal.
+
+```{r,echo = FALSE}
+df_clean<-df %>% 
+  rename(Situacion_Laboral = "Relación con la actividad económica") %>% 
+  filter(Sexo != "Ambos sexos", Edad != "Total") %>% 
+  mutate(Sexo=as.factor(Sexo), Edad=as.factor(Edad),
+         Situacion_Laboral=as.factor(Situacion_Laboral)) %>%
+  pivot_wider(names_from = Situacion_Laboral,values_from = Total) %>% 
+  rename(Parados_sin_exp="Parados que buscan primer empleo") %>% 
+  mutate(across(.cols=c(Parados,Parados_sin_exp,Activos,Ocupados,Inactivos),
+                .fns=~replace_na(.,0))) %>% 
+  mutate(across(c(Activos, Ocupados, Parados, Inactivos, Total), as.numeric),Tasa_paro=Parados/Activos*100,Tasa_actividad=Activos/Total*100,
+         Tasa_ocupacion=Ocupados/Total*100) %>% 
+  mutate(
+    Edad = str_replace(Edad, "De ", ""),
+    Edad = str_replace(Edad, " a ", "-"),
+    Edad = str_replace(Edad, " años", ""),
+    Edad = str_replace(Edad, "70 y más", "70+"),
+    
+    Edad = factor(Edad, levels = c(
+      "16-19", "20-24", "25-29", "30-34", "35-39", 
+      "40-44", "45-49", "50-54", "55-59", "60-64", 
+      "65-69", "70+"), ordered = T
+      )
+  )
+```
+
+
+Se comprueba que la limpieza esté bien hecha, primero viendo si el formato de los datos es el adecuado y asegurando que no quedan valores faltantes.
+```{r,  tidy=TRUE, results='markup',,echo = FALSE}
+str(df_clean)
+```
+
+```{r,echo = FALSE}
+sapply(df_clean,function(x) sum(is.na(x)))
+```
+
+
+por último se guarda el dataframe limpio con el nombre `df_clean.csv`
+
+```{r,echo = FALSE}
+write_csv(df_clean,file = "data/df_clean.csv")
+```
+
+# Evolución temporal de las tasas
+
+## Evolución de las tasas con la brecha
+
+
+# Distribución de la población en el mercado laboral
+
+
+# Resultados
+
+
+
+# Conclusión
+
+# ---------------------------------
+
+
+
+
+
+
+
+```{r,echo = FALSE}
+# animacion_actividad <- df_ancho %>%
+#   ggplot(aes(x = Edad, y = Tasa_actividad, color = Sexo, group = Edad)) +
+#   geom_point(size = 4, alpha = 0.8) +
+#   geom_line(aes(group = Edad), alpha = 0.5) +
+#   labs(
+#     title = "Tasa de Actividad por Edad y Sexo - Año: {as.integer(frame_time)}",
+#     subtitle = "La brecha de género en la participación laboral.",
+#     y = "Tasa de Actividad (%)",
+#     x= "Edad (años)"
+#   ) +
+#   theme_minimal() +
+#   transition_time(Periodo) +
+#   ease_aes('linear')
+# anim_save(
+#   filename = "evolucion_actividad.gif", 
+#   animation = animacion_actividad,
+#   renderer = gifski_renderer(loop = TRUE)
+# )
+```
+
+
+
+```{r,echo = FALSE}
+ggplot(df_clean, aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribución de la Tasa de Actividad por Sexo (Análisis Global)",
+    subtitle = "El boxplot visualiza la mediana, la dispersión y la asimetría de la brecha.",
+    y = "Tasa de Actividad (%)",
+    x = NULL
+  )  +
+  theme_minimal()
+```
+
+
+```{r,echo = FALSE}
+edades_focales <- c(
+  "25-29",
+  "30-34",
+  "35-39",
+  "40-44",
+  "45-49",
+  "50-54"
+)
+t.test(Tasa_ocupacion ~ Sexo, data = df_clean%>% filter(Periodo == 2024,Edad%in%edades_focales))
+```
+
+
+
