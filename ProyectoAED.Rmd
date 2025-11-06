@@ -235,7 +235,7 @@ df_sexo_edad <- df_clean %>% group_by(Periodo, Sexo, Edad) %>% summarise(tasa_ac
 ggplot(df_sexo_edad, aes(x = Periodo, y = tasa_actividad, color = Edad)) + geom_line(linewidth = 1) +  facet_wrap(~Sexo) + scale_x_continuous(breaks = seq(2006, 2024, by = 2)) + scale_y_continuous(labels = scales::comma) +  labs(title = "Tasa de actividad por edad y sexo (2006–2024)", x = "Año", y = "Tasa de actividad (%)", color = "Edad") + theme_minimal()  + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
 
 ```
-
+Como se observa en la gráfica, los hombres presentan tasas de actividad mucho más elevadas que las mujeres, sobretodo en el rango de 30 y 54 años. En ambos sexos, la tasa decae a partir de los 60 años, reflejando consigo la desigualdad en el mercado cuando se trata de envejecimiento
 
 
 
@@ -245,7 +245,7 @@ df_paro_sexo <- df_clean %>% group_by(Periodo, Sexo) %>% summarise(tasa_paro = m
 ggplot(df_paro_sexo, aes(x = Periodo, y = tasa_paro, color = Sexo)) + geom_line(size=2) + scale_x_continuous(breaks = seq(2006, 2024, by = 2))+ labs(title = "Tasa de paro por sexo (2006–2024)", x = "Año", y = "Tasa de paro (%)") + theme_minimal()
 
 ```
-
+Desde la crisis de 2008, la tasa de paro en ambos sexos ha ido aumentado progresivamente hasta 2013, año en el que empezó a decaer. Lo que se observa, además, es como desde 2014 el paro en mujeres es mucho mas alto que el de hombres, reflejando la brecha persisitente.  Por tanto, aunque ambos sexos sufren paro, las mujeres tienen mas dificultades para acceder (o incluso mantenerse) a trabajos. 
 
 
 
@@ -370,6 +370,7 @@ ggplot(brecha_relativa, aes(x = Periodo, y = Razon)) +
     plot.title = element_text(face = "bold")
   )
 ```
+Esta gráfica muestra cómo ha cambiado la relación entre la tasa de actividad de los hombres y la de las mujeres a lo largo del tiempo. Cada punto representa el cociente entre ambas tasas en un año determinado. Una razón superior a 1 indica que los hombres tienen mayor participación en el mercado laboral que las mujeres. Desde 2006, la razón ha descendido de forma sostenida, lo que refleja una reducción progresiva de la brecha de género. Aunque no se ha alcanzado la igualdad, las mujeres han incrementado su participación relativa. El pequeño repunte en 2024 sugiere una posible ralentización en esa convergencia o una proyección conservadora.
 
 
 <!-- # ```{r} -->
@@ -441,24 +442,8 @@ Del análisis de los gráficos se observa una estructura bastante estable del me
 Estas gráficas, también ponen de manifiesto un proceso de envejecimiento del desempleo y una convergencia progresiva entre hombres y mujeres en la estructura interna del paro, aunque todavía persisten diferencias derivadas de los roles laborales y sociales tradicionales. Mientras los hombres mayores ganan peso dentro del paro total por el retraso en la jubilación, las mujeres siguen mostrando una mayor vulnerabilidad en las edades centrales, reflejando las desigualdades de género que aún caracterizan el mercado laboral español.
 
 
-#Distribución de ocupados e inactivos por sexo
 
-```{r, echo=FALSE}
-df_ocup_inact <- df_clean %>%
-  group_by(Sexo) %>%
-  summarise(
-    Ocupados = sum(Ocupados, na.rm = TRUE),
-    Inactivos = sum(Inactivos, na.rm = TRUE)
-  ) %>%
-  pivot_longer(cols = c(Ocupados, Inactivos), names_to = "Situacion", values_to = "Personas")
-
-```
-
-```{r, echo=FALSE}
-ggplot(df_ocup_inact, aes(x = Sexo, y = Personas, fill = Situacion)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Distribución de ocupados e inactivos por sexo", x = "Sexo", y = "Personas")
-```
+  
 
 
 
