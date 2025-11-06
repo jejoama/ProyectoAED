@@ -271,6 +271,28 @@ ggplot(df_clean, aes(x = Edad, y = Parados, fill = Sexo)) +
 
 ```
 
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# Preparar los datos: convertir Edad a factor con orden lógico
+df_clean <- df_clean %>%
+  mutate(Edad = factor(Edad, levels = unique(Edad)))
+
+# Crear gráfico de violín
+ggplot(df_clean, aes(x = Edad, y = Parados, fill = Sexo)) +
+  geom_violin(trim = FALSE, scale = "width") +
+  labs(
+    title = "Distribución del paro por edad y sexo",
+    x = "Rango de edad",
+    y = "Número de parados",
+    fill = "Sexo"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("Hombres" = "blue", "Mujeres" = "green")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
 
 
 
