@@ -39,7 +39,7 @@ Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos 
 
 ## Carga de Librerías
 
-```{r}
+```{r,echo = FALSE}
 # Manejo de datos
 library(readr)
 library(dplyr)
@@ -61,24 +61,24 @@ library(gifski)
 
 - **Codificación e importación**: Se verifica la codificación y se importa el archivo CSV delimitado por tabulaciones, se indica que el separador decimal es la coma y que los valores *NA* están codificados como `".."`
 
-```{r}
+```{r,echo = FALSE}
 archivo<-"data/65948.csv"
 guess_encoding(archivo)
 ```
 
-```{r}
+```{r,echo = FALSE}
 df<-read_delim(archivo, delim = "\t", escape_double = FALSE, na = "..", 
                trim_ws = TRUE,locale = locale(decimal_mark = ","))
 ```
 
-```{r}
+```{r,echo = FALSE}
 head(df)
 ```
 
 
 Se comprueba la estructura inicial de los datos
 
-```{r}
+```{r,echo = FALSE}
 str(df)
 ```
 
@@ -86,20 +86,20 @@ str(df)
 
 Con el objetivo de ver la cantidad de los datos faltantes la variable que tiene estos datos se utiliza la siguiente función: 
 
-```{r}
+```{r,echo = FALSE}
 vis_miss(df %>% rename(Situacion_Laboral = "Relación con la actividad económica"))+theme(
     axis.text.x = element_text(hjust = 1.2), 
     plot.margin = unit(c(1, 1, 1, 1), "cm") 
   )
 ```
 
-```{r}
+```{r,echo = FALSE}
 sapply(df,function(x) sum(is.na(x)))
 ```
 
 Todos los valores ausentes se encuentran en `Total`
 
-```{r}
+```{r,echo = FALSE}
 df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% filter(is.na(Total)) %>% ggplot(aes(x=Situacion_Laboral))+geom_bar(aes(fill=Edad))+labs(
     title = "Frecuencia de los registros faltantes NA",
     subtitle = "Distribución por Situación Laboral y la edad",
@@ -153,7 +153,7 @@ $$\text{Tasa de ocupación}=\frac{\text{Ocupados}}{\text{Total}} \cdot 100$$
 
 - **Ordenación en factores**: Se ordena la columna `Edad` como un factor ordinal y la columna `Sexo` como factor nominal.
 
-```{r}
+```{r,echo = FALSE}
 df_clean<-df %>% 
   rename(Situacion_Laboral = "Relación con la actividad económica") %>% 
   filter(Sexo != "Ambos sexos", Edad != "Total") %>% 
@@ -181,18 +181,18 @@ df_clean<-df %>%
 
 
 Se comprueba que la limpieza esté bien hecha, primero viendo si el formato de los datos es el adecuado y asegurando que no quedan valores faltantes.
-```{r,  tidy=TRUE, results='markup'}
+```{r,  tidy=TRUE, results='markup',,echo = FALSE}
 str(df_clean)
 ```
 
-```{r}
+```{r,echo = FALSE}
 sapply(df_clean,function(x) sum(is.na(x)))
 ```
 
 
 por último se guarda el dataframe limpio con el nombre `df_clean.csv`
 
-```{r}
+```{r,echo = FALSE}
 write_csv(df_clean,file = "data/df_clean.csv")
 ```
 
@@ -218,7 +218,7 @@ write_csv(df_clean,file = "data/df_clean.csv")
 
 
 
-```{r}
+```{r,echo = FALSE}
 # animacion_actividad <- df_ancho %>%
 #   ggplot(aes(x = Edad, y = Tasa_actividad, color = Sexo, group = Edad)) +
 #   geom_point(size = 4, alpha = 0.8) +
@@ -241,7 +241,7 @@ write_csv(df_clean,file = "data/df_clean.csv")
 
 
 
-```{r}
+```{r,echo = FALSE}
 ggplot(df_clean, aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
   geom_boxplot() +
   labs(
@@ -254,7 +254,7 @@ ggplot(df_clean, aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
 ```
 
 
-```{r}
+```{r,echo = FALSE}
 edades_focales <- c(
   "25-29",
   "30-34",
