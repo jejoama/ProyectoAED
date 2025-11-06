@@ -248,6 +248,30 @@ anim_save("activos_inactivos_sexo.gif", animation = animacion, renderer = gifski
 
 
 
+graf vilin
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+
+ggplot(df_clean, aes(x = Edad, y = Parados, fill = Sexo)) +
+  geom_violin(trim = FALSE, scale = "width") +
+  labs(
+    title = "Distribución del paro por edad y sexo",
+    x = "Rango de edad",
+    y = "Número de parados",
+    fill = "Sexo"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("Hombres" = "red", "Mujeres" = "blue")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
+
+
 
 
 
