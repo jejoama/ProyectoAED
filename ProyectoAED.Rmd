@@ -91,7 +91,7 @@ df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% f
   theme_minimal()
 ```
 
-Se observa que los datos faltantes son del tipo MAR, los valores faltantes vienen asociados a grupos de edad altos y cuya relación con la actividad económica es "Parados que buscan primer empleo" o "Parados".
+Se observa que los datos faltantes son del tipo MAR, valores faltantes vienen asociados a grupos de edad altos y cuya relación con la actividad económica es "Parados que buscan primer empleo" o "Parados".
 
 
 # Definición de variables
