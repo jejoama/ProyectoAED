@@ -12,12 +12,12 @@ status: submit
 simplesummary: |
   A Simple summary goes here.
 abstract: |
-
+  Este estudio realiza un análisis exploratorio y estadístico de la Encuesta de Población Activa (EPA) para evaluar la evolución de la brecha de género en el mercado laboral español entre el 2000 y 2024.
+  Los resultados clave validados mediante pruebas de t de student, demuestran que la disparidad no reside en la tasa de paro sino en la tasa de actividad. 
 
 keywords: |
-  keyword 1; keyword 2; keyword 3 (list three to ten pertinent keywords specific 
-  to the article, yet reasonably common within the subject discipline.).
-# back matter
+  Brecha de Género; Tasa de Actividad; Análisis de Series de Tiempo; t de Student.
+
 
 bibliography: mybibfile.bib
 endnotes: false
@@ -143,7 +143,7 @@ La limpieza de los datos a consistido en estos puntos:
 
 - **Se aplica `pivot_wider()`** utilizando los valores de la columna `Situacion_Laboral` para crear las nuevas columnas (`names_from`) y los valores numéricos de la columna `Total`.
 
-- **Renombrar variables**: Se renombra la columna `"parados que buscan primer empleo"` a un formato más corto `r "Parados_sin_exp"`
+- **Renombrar variables**: Se renombra la columna "parados que buscan primer empleo" a un formato más corto `r "Parados_sin_exp"`
 
 - **Imputación de NA a 0**: Los valores faltantes se concentran en categorías como Personas mayores en paro o que buscan su primer empleo. El INE suprime el dato por ser un valor insignificante, por lo que se opta por remplazar los valores nulos a 0 para no perder el resto de información válida de la instancia.
 
@@ -184,7 +184,9 @@ write_csv(df_clean,file = "data/df_clean.csv")
 
 # Análisis de las tasas
 
-## Distribución de la tasa de actividad por sexo
+## Distribución de la tasa de actividad y paro por sexo
+
+En las siguientes gráficas se va a estudiar la distribución general de las tasas a lo largo de todo el periodo y separado por sexo.
 
 ```{r,echo = FALSE}
 ggplot(df_clean, aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
@@ -194,12 +196,26 @@ ggplot(df_clean, aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
     subtitle = "El boxplot visualiza la mediana, la dispersión y la asimetría de la brecha.",
     y = "Tasa de Actividad (%)",
     x = NULL
-  )  +
+  )  + 
   theme_minimal()
 ```
 
+En este primer gráfico se muestra la tasa de actividad para hombres y mujeres. Se observa una clara y pronunciada separación entre estas distribuciones. La mediana de la tasa de actividad para hombres es superior a la de las mujeres. Además, la caja del grupo masculino se sitúa por encima del grupo femenino.
 
-## Evolucion de la tasa de paro por género y evolución de la brecha de la tasa de paro por género
+```{r,echo = FALSE}
+ggplot(df_clean, aes(x = Sexo, y = Tasa_paro, fill = Sexo)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribución de la Tasa de Actividad por Sexo (Análisis Global)",
+    subtitle = "El boxplot visualiza la mediana, la dispersión y la asimetría de la brecha.",
+    y = "Tasa de Actividad (%)",
+    x = NULL
+  )  + 
+  theme_minimal()
+```
+A diferencia de la tasa de actividad, en este gráfico se aprecia una mayor superposición entre las distribuciones de ambos sexos. Las medianas de ambas distribuciones se encuentra más cercanas.
+
+## Evolucion de la tasa de paro y de la brecha de paro por género
 
 En este bloque de código se construyen varias representaciones gráficas con el fin de analizar la evolución de la tasa de paro y la brecha de género a lo largo del tiempo. Para ello, se parte de una tabla en la que se calcula la variable *brecha_paro*, definida como la diferencia entre la tasa de paro de mujeres y la de hombres. Posteriormente, los datos se agrupan por periodo para obtener las tasas medias anuales de paro por sexo y la brecha media correspondiente. 
 
@@ -514,9 +530,7 @@ kable(tabla_dispersion, caption = "Desviación estándar y varianza de ocupados 
 ```
 
 
-
-
-
+Para validar estadísticamente las diferencias observadas ente las series temporales por sexo se va a realizar una prueba de t de Student para las dos principales métricas del mercado laboral, la tasa de actividad y la de paro. Los resultados se pueden observar en la siguiente tabla:
 
 ```{r,echo = FALSE}
 
@@ -539,5 +553,12 @@ kable(tabla_ttest,
       align = "lccc")
 ```
 
+Como se observa en esta tabla, la tasa de actividad presenta un valor $p$ extremadamente bajo ($0.001$), lo que permite rechazar la hipótesis nula y por lo tanto, la tasa de actividad depende del sexo.
+
+Por otro lado, la tasa de paro muestra un valor de p alto ($0.128$) lo que sugiere que la tasa de paro no depende del sexo. 
+
+
 
 # Conclusión
+
+
