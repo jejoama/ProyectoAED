@@ -79,23 +79,67 @@ df_clean <- read_csv("data/df_clean.csv")
 
 
 # ------------------ GRÁFICA 3 --------------------------------
-datos_composicion<- df_clean  %>% 
-  select(Periodo,Edad,Sexo,Activos,Ocupados,Parados,Inactivos) %>% 
-  pivot_longer(cols = c(Inactivos,Ocupados,Parados),names_to = "Estado",values_to = "N_Personas")
-graph1 <- ggplot(datos_composicion, 
-                 aes(x = factor(Edad, levels = unique(Edad)),
-                     y = N_Personas, fill = Estado)) +
-  geom_col(position = "fill") +
-  facet_wrap(~Sexo) +
+# datos_composicion<- df_clean  %>% 
+#   select(Periodo,Edad,Sexo,Activos,Ocupados,Parados,Inactivos) %>% 
+#   pivot_longer(cols = c(Inactivos,Ocupados,Parados),names_to = "Estado",values_to = "N_Personas")
+# graph1 <- ggplot(datos_composicion, 
+#                  aes(x = factor(Edad, levels = unique(Edad)),
+#                      y = N_Personas, fill = Estado)) +
+#   geom_col(position = "fill") +
+#   facet_wrap(~Sexo) +
+#   labs(
+#     title = "Composición del mercado laboral por grupo de edad - Año: {as.integer(frame_time)}",
+#     x = "Grupo de edad",
+#     y = "Proporción",
+#     fill = "Estado"
+#   ) +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   transition_time(Periodo) +
+#   ease_aes('linear')
+# animacion <- animate(graph1, nframes = 100, fps = 10, renderer = gifski_renderer())
+# anim_save("gifs/composicion_mercado.gif", animation = animacion)
+
+# ------------------------ GRÁFICA 4 ------------------
+
+datos_anim <- df_clean %>%
+  group_by(Sexo, Periodo, Edad) %>%
+  summarise(Parados = sum(Parados, na.rm = TRUE)) %>%
+  group_by(Sexo, Periodo) %>%
+  mutate(Proporcion_parados_en_sexo = Parados / sum(Parados)) %>%
+  ungroup()
+
+edades_orden <- datos_anim %>%
+  distinct(Edad) %>%
+  mutate(inicio = as.integer(str_extract(Edad, "\\d+"))) %>%  
+  arrange(inicio) %>%
+  pull(Edad)
+
+datos_anim <- datos_anim %>%
+  mutate(Edad = factor(Edad, levels = edades_orden))
+
+grafico_animado <- ggplot(datos_anim, 
+                          aes(x = Edad, 
+                              y = Proporcion_parados_en_sexo, 
+                              fill = Sexo)) +
+  geom_col(position = "dodge") +
   labs(
-    title = "Composición del mercado laboral por grupo de edad - Año: {as.integer(frame_time)}",
+    title = "Distribución del paro dentro de cada sexo - Año: {as.integer(frame_time)}",
     x = "Grupo de edad",
-    y = "Proporción",
-    fill = "Estado"
+    y = "Proporción del total de parados del mismo sexo",
+    fill = "Sexo"
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   transition_time(Periodo) +
-  ease_aes('linear')
-animacion <- animate(graph1, nframes = 100, fps = 10, renderer = gifski_renderer())
-anim_save("gifs/composicion_mercado.gif", animation = animacion)
+  ease_aes("linear")
+
+animacion <- animate(
+  grafico_animado,
+  nframes = length(unique(datos_anim$Periodo)) * 10,  
+  fps = 10,
+  width = 800,
+  height = 600,
+  renderer = gifski_renderer()
+)
+anim_save("gifs/distribucion_paro_sexo.gif", animation = animacion)
