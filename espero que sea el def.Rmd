@@ -1,0 +1,469 @@
+---
+title: "J"
+output: html_document
+date: "2025-10-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## GRAFICAS JOE
+
+
+IMPORTAMOS EL ARCHIVO CSV
+
+```{r}
+library(readr)
+df_clean <- read_csv("data/df_clean.csv")
+
+```
+
+Aggrupación de datos por periodo y por sexo
+```{r}
+# Calculamos la media de la tasa de actividad para cada grupo
+# Usamos na.rm = TRUE para ignorar valores faltantes
+library(tidyverse)
+
+df_p_sexo <- df_clean %>% group_by(Periodo, Sexo) %>% summarise(tasa_actividad = mean(Tasa_actividad, na.rm = TRUE) #Hay que ignorar los valores NA
+                                                                , .groups = "drop") #hay que eliminar esas agrupaciones 
+
+#Que pretendemos? Calcular la media de la tasa de actividad de todos los grupos del df
+
+
+
+```
+
+```{r}
+# Gráfica 
+library(ggplot2)
+ggplot(df_p_sexo, aes(x = Periodo, y = tasa_actividad, color = Sexo)) + geom_line(linewidth = 2) +  labs(title = "Tasa de actividad según sexo (2006–2024)", x = "Año", y = "% Tasa de actividad",color = "Sexo") + theme_minimal()  
+
+# Eje X:Periodo -  Eje Y: tasa de actividad promedio
+
+
+```
+```{r}
+cat("La gráfica enseña la evolución de la tasa de actividad en España entre los años 2006 y 2024, diferenciada por sexo. Por un lado, la proporción de hombres es mucho mayor a la de mujeres, cosa que va ligada a que los hombres siempre han tenido mayor participicaion en muchos mas sectores, como lo puede ser la construcción, y a que las mujeres se ligan mas al cuidado familiar.
+    Pese a esto, la actividad masculina en 2008 se desacelera economicamnete, esto provocado por la crisis financiera que se vivió en la epoca. Es en 2017/18 que comienza su recuperación, pero nunca a los niveles previos a la crisis. En 2020, debido al Covid-19, se observa otra caida en la tendencía (porque el Covid-19 afectó a muchos sectores, como la industría por ejemplo). Aunque se observa también su recuperació, tampoco volvió a los nieveles previos de la crisis de 2008
+    por el otro lado, la tasa de actividad femenina se muestra, en el periodo, ascendente ya que han ido incorporandose cada vez mas en el mercado laboral español.\n")
+```
+
+
+
+
+Tasa de actividad por edad y sexo
+
+```{r}
+# Agrupamos por Periodo, sexo y Edad
+
+##Que pretendemos? Calcular la media de la tasa de actividad para cada combinación
+df_sexo_edad <- df_clean %>% group_by(Periodo, Sexo, Edad) %>% summarise(tasa_actividad = mean(Tasa_actividad, na.rm = TRUE),.groups = "drop")
+
+```
+
+```{r}
+
+ggplot(df_sexo_edad, aes(x = Periodo, y = tasa_actividad, color = Edad)) + geom_line(linewidth = 1) +  facet_wrap(~Sexo) + scale_x_continuous(breaks = seq(2006, 2024, by = 2)) + scale_y_continuous(labels = scales::comma) +  labs(title = "Tasa de actividad por edad y sexo (2006–2024)", x = "Año", y = "Tasa de actividad (%)", color = "Edad") + theme_minimal()  + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
+
+```
+
+```{r}
+df_mujeres <- df_sexo_edad %>% filter(Sexo == "Mujeres")
+
+ggplot(df_mujeres, aes(x = Periodo, y = tasa_actividad, color = Edad)) +
+  geom_line(linewidth = 1) +
+  scale_x_continuous(breaks = seq(2006, 2024, by = 2)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Tasa de actividad por edad – Mujeres (2006–2024)",
+    x = "Año",
+    y = "Tasa de actividad (%)",
+    color = "Edad"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
+
+```
+
+```{r}
+df_hombres <- df_sexo_edad %>% filter(Sexo == "Hombres")
+
+ggplot(df_hombres, aes(x = Periodo, y = tasa_actividad, color = Edad)) +
+  geom_line(linewidth = 1) +
+  scale_x_continuous(breaks = seq(2006, 2024, by = 2)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Tasa de actividad por edad – Hombres (2006–2024)",
+    x = "Año",
+    y = "Tasa de actividad (%)",
+    color = "Edad"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10))
+```
+
+
+
+
+
+TASA DE PARO POR SEXO
+```{r}
+df_paro_sexo <- df_clean %>% group_by(Periodo, Sexo) %>% summarise(tasa_paro = mean(Tasa_paro, na.rm = TRUE), .groups = "drop")
+
+ggplot(df_paro_sexo, aes(x = Periodo, y = tasa_paro, color = Sexo)) + geom_line(size=2) + scale_x_continuous(breaks = seq(2006, 2024, by = 2))+ labs(title = "Tasa de paro por sexo (2006–2024)", x = "Año", y = "Tasa de paro (%)") + theme_minimal()
+
+```
+
+
+Distribución de ocupados e inactivos por sexo
+
+```{r}
+df_ocup_inact <- df_clean %>%
+  group_by(Sexo) %>%
+  summarise(
+    Ocupados = sum(Ocupados, na.rm = TRUE),
+    Inactivos = sum(Inactivos, na.rm = TRUE)
+  ) %>%
+  pivot_longer(cols = c(Ocupados, Inactivos), names_to = "Situacion", values_to = "Personas")
+
+
+```
+
+```{r}
+ggplot(df_ocup_inact, aes(x = Sexo, y = Personas, fill = Situacion)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Distribución de ocupados e inactivos por sexo", x = "Sexo", y = "Personas")
+```
+#gif ocupados-inactivos
+```{r}
+library(ggplot2)
+library(gganimate)
+library(gifski)
+library(dplyr)
+library(tidyr)
+
+# datos por año
+df_ocup_inact <- df_clean %>%
+  group_by(Periodo, Sexo) %>%
+  summarise(
+    Ocupados = sum(Ocupados, na.rm = TRUE),
+    Inactivos = sum(Inactivos, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_longer(cols = c(Ocupados, Inactivos), names_to = "Situacion", values_to = "Personas")
+
+# gráfico animado
+graph1 <- ggplot(df_ocup_inact, aes(x = Sexo, y = Personas, fill = Situacion)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Distribución de ocupados e inactivos por sexo – Año: {frame_time}",
+    x = "Sexo",
+    y = "Personas",
+    fill = "Situación"
+  ) +
+  theme_minimal() +
+  transition_time(Periodo) +
+  ease_aes('linear')
+
+#  GIF 
+anim_save("ocupados_inactivos_sexo.gif", animation = graph1, renderer = gifski_renderer())
+
+```
+
+
+
+
+
+
+
+```{r}
+df_act_inact <- df_clean %>%
+  group_by(Sexo) %>%
+  summarise(
+    Activos = sum(Activos, na.rm = TRUE),
+    Inactivos = sum(Inactivos, na.rm = TRUE)
+  ) %>%
+  pivot_longer(cols = c(Activos, Inactivos), names_to = "Situacion", values_to = "Personas")
+
+ggplot(df_act_inact, aes(x = Sexo, y = Personas, fill = Situacion)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Distribución de activos e inactivos por sexo",
+    x = "Sexo",
+    y = "Personas",
+    fill = "Situación"
+  ) +
+  theme_minimal()
+
+``` 
+
+
+```{r}
+library(ggplot2)
+library(gganimate)
+library(gifski)
+library(dplyr)
+library(tidyr)
+
+# 1️⃣ Preparar los datos por año
+df_act_inact <- df_clean %>%
+  group_by(Periodo, Sexo) %>%
+  summarise(
+    Activos = sum(Activos, na.rm = TRUE),
+    Inactivos = sum(Inactivos, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_longer(cols = c(Activos, Inactivos), names_to = "Situacion", values_to = "Personas")
+
+# 2️⃣ Crear el gráfico animado
+graph1 <- ggplot(df_act_inact, 
+                 aes(x = Sexo, y = Personas, fill = Situacion)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Distribución de activos e inactivos por sexo – Año: {frame_time}",
+    x = "Sexo",
+    y = "Personas",
+    fill = "Situación"
+  ) +
+  theme_minimal() +
+  transition_time(Periodo) +
+  ease_aes('linear')
+
+# 3️⃣ Crear la animación desde el gráfico
+animacion <- animate(graph1, nframes = 100, fps = 10, renderer = gifski_renderer())
+
+# 4️⃣ Guardar el GIF
+anim_save("activos_inactivos_sexo.gif", animation = animacion, renderer = gifski_renderer())
+
+
+
+
+```
+
+
+
+
+
+
+
+
+graf vilin
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+
+ggplot(df_clean, aes(x = Edad, y = Parados, fill = Sexo)) +
+  geom_violin(trim = FALSE, scale = "width") +
+  labs(
+    title = "Distribución del paro por edad y sexo",
+    x = "Rango de edad",
+    y = "Número de parados",
+    fill = "Sexo"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("Hombres" = "red", "Mujeres" = "blue")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# Preparar los datos: convertir Edad a factor con orden lógico
+df_clean <- df_clean %>%
+  mutate(Edad = factor(Edad, levels = unique(Edad)))
+
+# Crear gráfico de violín
+ggplot(df_clean, aes(x = Edad, y = Parados, fill = Sexo)) +
+  geom_violin(trim = FALSE, scale = "width") +
+  labs(
+    title = "Distribución del paro por edad y sexo",
+    x = "Rango de edad",
+    y = "Número de parados",
+    fill = "Sexo"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("Hombres" = "blue", "Mujeres" = "green")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+
+Estadisiticas
+
+# desv est y varianza
+```{r}
+df_clean %>% group_by(Sexo) %>% summarise(sd_ocupados = sd(Ocupados, na.rm = TRUE),var_ocupados = var(Ocupados, na.rm = TRUE))
+
+```
+
+
+
+
+```{r}
+df_clean %>%
+  group_by(Sexo) %>%
+  summarise(media_ocupados = mean(Ocupados, na.rm = TRUE),
+            media_inactivos = mean(Inactivos, na.rm = TRUE)) %>%
+  summarise(brecha_ocup = diff(media_ocupados),
+            brecha_inact = diff(media_inactivos))
+
+```
+
+
+
+
+
+
+```{r}
+df_brecha_genero <- df_clean %>% group_by(Periodo, Sexo) %>% summarise(tasa = mean(Tasa_actividad, na.rm = TRUE), .groups = "drop") %>% pivot_wider(names_from = Sexo, values_from = tasa) %>% mutate(Brecha = Hombres - Mujeres)
+
+df_brecha_genero
+
+```
+
+```{r}
+ggplot(df_brecha_genero, aes(x = Periodo, y = Brecha)) +
+  geom_line(color = "red", linewidth = 2) +
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed") + scale_y_continuous(breaks = seq(0, 20, by = 2))+
+  labs(title = "Evolución de la brecha de género en la tasa de actividad",
+       x = "Año", y = "Diferencia (Hombres - Mujeres)")
+
+```
+
+
+
+```{r}
+ggplot(df_brecha_genero, aes(x = Periodo, y = Brecha)) +
+  geom_point(color = "red") +
+  geom_smooth(method = "loess", se = FALSE, color = "blue", linewidth = 1.2) + scale_y_continuous(breaks = seq(0, 20, by = 2))+ scale_x_continuous(breaks = seq(2006, 2024, by = 2)) +
+  labs(
+    title = "Interpolación de la brecha de género NO LINEAL",
+    x = "Año",
+    y = "Brecha (Hombres - Mujeres)"
+  ) +
+  theme_minimal()
+
+```
+
+
+
+hombres/mujeres
+```{r}
+brecha_relativa <- df_clean %>%
+  group_by(Periodo, Sexo) %>%
+  summarise(Tasa = mean(Tasa_actividad, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = Sexo, values_from = Tasa) %>%
+  mutate(Razon = Hombres / Mujeres)
+
+brecha_relativa
+#j
+#l
+
+```
+
+```{r}
+ggplot(brecha_relativa, aes(x = Periodo, y = Razon)) +
+  geom_line(color = "blue", linewidth = 1.2) +
+  geom_point(color = "red", size = 2) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "gray") +  # línea de igualdad
+  scale_y_continuous(breaks = seq(1, 1.5, by = 0.05)) +  # marcas cada 0.05
+  scale_x_continuous(breaks = seq(2006, 2024, by = 2)) +  # años cada 2
+  labs(
+    title = "Evolución de la razón Hombres/Mujeres",
+    x = "Año",
+    y = "Razón (Hombres / Mujeres)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold")
+  )
+```
+
+
+
+por edad
+```{r}
+# Filtrar para excluir el grupo de edad "70 y más años"
+#brecha_edad_filtrada <- brecha_edad %>% filter(Edad != "70 y más años")
+
+# Graficar la razón Hombres/Mujeres por edad (sin el grupo de 70)
+#ggplot(brecha_edad_filtrada, aes(x = Periodo, y = Razon, color = Edad)) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "gray") +
+  scale_y_continuous(breaks = seq(0.5, 2, by = 0.1)) +
+  scale_x_continuous(breaks = seq(2006, 2024, by = 2)) +
+  labs(
+    title = "Razón Hombres/Mujeres en la tasa de actividad por edad (sin 70+)",
+    x = "Año",
+    y = "Razón (Hombres / Mujeres)",
+    color = "Edad"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+df_feminizacion <- df_clean %>%
+  group_by(Periodo, Edad, Sexo) %>%
+  summarise(Ocupados = sum(Ocupados), .groups = "drop") %>%
+  pivot_wider(names_from = Sexo, values_from = Ocupados) %>%
+  mutate(Indice_feminizacion = Mujeres / (Hombres + Mujeres) * 100)
+
+df_feminizacion
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+ggplot(df_feminizacion, aes(x = Periodo, y = Indice_feminizacion, color = Edad)) +
+  geom_line(size = 1.2) +
+  labs(
+    title = "Índice de feminización en ocupación por edad (2006–2024)",
+    x = "Año",
+    y = "Porcentaje de mujeres (%)",
+    color = "Grupo de edad"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+las mujeres tienen mayor presencia en la ocupación en los grupos de edad entre 30 y 54 años, especialmente desde 2010. 
+los jóvenes (16–24 años) y mayores (65+) presentan menor participación femenina y más fluctuaciones.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
