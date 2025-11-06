@@ -774,7 +774,7 @@ library(gifski)
 library(dplyr)
 library(tidyr)
 
-# 1️⃣ Preparar los datos por año
+#  Preparar los datos por año
 df_act_inact <- df_clean %>%
   group_by(Periodo, Sexo) %>%
   summarise(
@@ -784,7 +784,7 @@ df_act_inact <- df_clean %>%
   ) %>%
   pivot_longer(cols = c(Activos, Inactivos), names_to = "Situacion", values_to = "Personas")
 
-# 2️⃣ Crear el gráfico animado
+#  Crear el gráfico animado
 graph1 <- ggplot(df_act_inact, 
                  aes(x = Sexo, y = Personas, fill = Situacion)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -798,10 +798,10 @@ graph1 <- ggplot(df_act_inact,
   transition_time(Periodo) +
   ease_aes('linear')
 
-# 3️⃣ Crear la animación desde el gráfico
+# 3 Crear la animación desde el gráfico
 animacion <- animate(graph1, nframes = 100, fps = 10, renderer = gifski_renderer())
 
-# 4️⃣ Guardar el GIF
+#  Guardar el GIF
 anim_save("activos_inactivos_sexo.gif", animation = animacion, renderer = gifski_renderer())
 
 
