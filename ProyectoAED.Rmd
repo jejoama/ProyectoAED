@@ -487,6 +487,26 @@ df_clean %>% group_by(Sexo) %>% summarise(sd_ocupados = sd(Ocupados, na.rm = TRU
 
 ```
 
+```{r}
+library(dplyr)
+library(knitr)
+
+# Calcular desviación estándar y varianza por sexo
+tabla_dispersion <- df_clean %>%
+  group_by(Sexo) %>%
+  summarise(
+    `Desviación estándar (Ocupados)` = sd(Ocupados, na.rm = TRUE),
+    `Varianza (Ocupados)` = var(Ocupados, na.rm = TRUE)
+  )
+
+# Mostrar como tabla
+kable(tabla_dispersion, caption = "Desviación estándar y varianza de ocupados por sexo")
+
+```
+
+
+
+
 ```{r, echo=FALSE}
 df_clean %>%
   group_by(Sexo) %>%
