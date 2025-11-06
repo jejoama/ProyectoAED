@@ -1,5 +1,0 @@
----
-title: "ProyectoAED"
-output: html_document
----
-
