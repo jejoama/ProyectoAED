@@ -488,10 +488,8 @@ df_clean %>% group_by(Sexo) %>% summarise(sd_ocupados = sd(Ocupados, na.rm = TRU
 
 ```
 
-```{r}
+```{r, echo=FALSE}
 
-
-# Calcular desviación estándar y varianza por sexo
 tabla_dispersion <- df_clean %>%
   group_by(Sexo) %>%
   summarise(
@@ -499,7 +497,6 @@ tabla_dispersion <- df_clean %>%
     `Varianza (Ocupados)` = var(Ocupados, na.rm = TRUE)
   )
 
-# Mostrar como tabla
 kable(tabla_dispersion, caption = "Desviación estándar y varianza de ocupados por sexo")
 
 ```
@@ -511,8 +508,23 @@ kable(tabla_dispersion, caption = "Desviación estándar y varianza de ocupados 
 
 ```{r,echo = FALSE}
 
-t.test(Tasa_actividad ~ Sexo, data = df_clean)#%>% filter(Periodo == 2024,Edad%in%edades_focales))
+test_actividad <- t.test(Tasa_actividad ~ Sexo, data = df_clean)
+test_paro <- t.test(Tasa_paro ~ Sexo, data = df_clean)
 
+tabla_ttest <- data.frame(
+  Tasa = c("Actividad", "Paro"),
+  t = c(round(test_actividad$statistic, 3),
+        round(test_paro$statistic, 3)),
+  df = c(round(test_actividad$parameter, 2),
+         round(test_paro$parameter, 2)),
+  `p-value` = c(round(test_actividad$p.value, 4),
+                round(test_paro$p.value, 4))
+)
+
+# Mostramos la tabla con kable
+kable(tabla_ttest,
+      caption = "Resultados de las pruebas t para comparar las tasas entre sexos",
+      align = "lccc")
 ```
 
 
