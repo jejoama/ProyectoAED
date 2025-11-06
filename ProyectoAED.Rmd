@@ -28,8 +28,6 @@ output:
 ---
 
 
-
-
 ```{r,echo = FALSE}
 rm(list=ls())
 ```
@@ -194,12 +192,373 @@ sapply(df_clean,function(x) sum(is.na(x)))
 write_csv(df_clean,file = "data/df_clean.csv")
 ```
 
-# Evolución temporal de las tasas
+# Evolución temporal de las tasas con la brecha
 
-## Evolución de las tasas con la brecha
+##Evolucion de la tasa de paro por género y evolución de la brecha de la tasa de paro por género
+
+En este bloque de código se construyen varias representaciones gráficas con el fin de analizar la evolución de la tasa de paro y la brecha de género a lo largo del tiempo. Para ello, se parte de una tabla en la que se calcula la variable *brecha_paro*, definida como la diferencia entre la tasa de paro de mujeres y la de hombres. Posteriormente, los datos se agrupan por periodo para obtener las tasas medias anuales de paro por sexo y la brecha media correspondiente. 
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# 1º crear una tabla con la variable brecha_paro 
+brecha <- datos %>% 
+  select(Periodo, Edad,Sexo,Tasa_paro) %>% 
+  pivot_wider(names_from = Sexo, values_from = Tasa_paro) %>% 
+  mutate(brecha_paro=Mujeres-Hombres)
+brecha
+
+#2º Agrupar esas fechas por periodo, para asi no diferenciar entre grupos de edades y tener la brecha total
+brechas_total <- brecha %>%
+  group_by(Periodo) %>%
+  summarise(
+    tasa_hombres = mean(Hombres, na.rm = TRUE),
+    tasa_mujeres = mean(Mujeres, na.rm = TRUE),
+    brecha_paro_total = mean(brecha_paro, na.rm = TRUE)
+  )
+brechas_total
+
+evo_brecha_total <- ggplot(brechas_total,aes(x=Periodo,y=brecha_paro_total)) + geom_line()+geom_point()+labs(title = "Evolución de la brecha de paro total",x="años",y="Brecha de tasa de paro")
+evo_brecha_total
+evo_tasa_total <-  ggplot(brechas_total, aes(x = Periodo)) +geom_line(aes(y = tasa_hombres, color = "Hombres")) +geom_point(aes(y = tasa_hombres, color = "Hombres")) +geom_line(aes(y = tasa_mujeres, color = "Mujeres")) +geom_point(aes(y = tasa_mujeres, color = "Mujeres")) +labs(title = "Evolución de la tasa de paro total por sexo",x = "Año",y = "Tasa de paro (%)",color = "Sexo")
+evo_tasa_total
+
+evo_tasa_y_brecha<-ggplot(brechas_total, aes(x = Periodo)) +geom_line(aes(y = tasa_hombres, color = "Hombres"), size = 1.3) +geom_point(aes(y = tasa_hombres, color = "Hombres"), size = 2) +geom_line(aes(y = tasa_mujeres, color = "Mujeres"), size = 1.3) +geom_point(aes(y = tasa_mujeres, color = "Mujeres"), size = 2) +geom_line(aes(y = brecha_paro_total, color = "Brecha"), size = 1.2,) +geom_point(aes(y = brecha_paro_total, color = "Brecha"), size = 2) +labs(title = "Evolución de la tasa de paro total por sexo y brecha",x = "Año",y = "Tasa de paro (%)",) +scale_color_manual(values = c("Hombres" = "blue", "Mujeres" = "red", "Brecha" = "black"))+theme_minimal()
+evo_tasa_y_brecha
+```
+El primer gráfico (`evo_brecha_total`) representa la evolución de la brecha de paro total tanto con lineas como con puntos para mostrar la tendencia y los valores anuales. En él se observa cómo la diferencia entre hombres y mujeres en la tasa de paro varía a lo largo del tiempo, con un aumento notable en los años posteriores a la crisis de 2008 y una ligera reducción en la última etapa analizada. Por su parte, el segundo gráfico (`evo_tasa_total`) muestra la evolución de la tasa de paro de hombres y mujeres de forma independiente, utilizando colores diferenciados para cada grupo. Esta visualización permite comparar directamente la evolución de ambos sexos, destacando la persistencia de una mayor tasa de paro entre las mujeres en prácticamente todos los años del periodo estudiado.
+
+Por último, el tercer gráfico (`evo_tasa_y_brecha`) combina ambas perspectivas en una única figura. Se incluyen las líneas de hombres, mujeres y brecha, diferenciadas mediante colores específicos definidos con `scale_color_manual()`. Este enfoque conjunto facilita observar la relación entre las dos tasas y su diferencia a lo largo del tiempo, ofreciendo una visión global de la evolución de las desigualdades de género en el desempleo. En conjunto, el código y las representaciones resultantes permiten analizar de forma visual y comparativa la magnitud y la persistencia de la brecha de género en el mercado laboral español.
+
+## Evolucion de la tasa de paro y su brecha por grupo de edad
+En este bloque de código se elaboran una serie de gráficos exploratorios con el objetivo de analizar la evolución de la brecha de paro entre mujeres y hombres desagregada por grupos de edad. A partir del conjunto de datos principal, se construye una tabla denominada brecha_edades que contiene la tasa de paro por sexo y edad, y se calcula la variable brecha_paro como la diferencia entre las tasas de mujeres y hombres. Posteriormente, los grupos de edad se clasifican en intervalos de diez años, y los datos se dividen en distintos subconjuntos (df_1, df_2, df_3) para facilitar la representación y mejorar la legibilidad de los gráficos.
+
+```{r}
+brecha_edades <- datos %>% 
+  select(Sexo, Edad, Periodo,Tasa_paro) %>% 
+  pivot_wider(names_from = Sexo, values_from = Tasa_paro) %>% 
+  mutate(brecha_paro=Mujeres-Hombres)
+brecha_edades
+
+unique(brecha_edades$Edad)
+library(ggplot2)
+#Para hacerlo con un unico dataframe, es muy complejo de graficar, asi que es mejor dividirlo en varios dataframes, para que así sea mas sencillo trabajar
+edades_1 <- c("De 16 a 19 años", "De 20 a 24 años", "De 25 a 29 años", "De 30 a 34 años")
+edades_2 <- c("De 35 a 39 años", "De 40 a 44 años", "De 45 a 49 años", "De 50 a 54 años")
+edades_3 <- c("De 55 a 59 años", "De 60 a 64 años", "De 65 a 69 años", "De 70 y más años")
+
+df_1 <- brecha_edades %>% filter(Edad %in% edades_1)
+df_2 <- brecha_edades %>% filter(Edad %in% edades_2)
+df_3 <- brecha_edades %>%  filter(Edad %in% edades_3)
+
+ggplot(df_1, aes(x = Periodo, y = brecha_paro)) +
+  geom_line( size = 1.2) +
+  geom_point(size = 2) +
+  facet_wrap(~ Edad, ncol = 2) +  # ← cuadrícula 2×2
+  labs(title = "Evolución de la brecha de paro (Mujeres - Hombres)",x = "Año",y = "Brecha") +
+  theme_minimal()
+
+ggplot(df_2, aes(x = Periodo, y = brecha_paro)) +
+  geom_line( size = 1.2) +
+  geom_point(size = 2) +
+  facet_wrap(~ Edad, ncol = 2) +  
+  labs(title = "Evolución de la brecha de paro (Mujeres - Hombres)",x = "Año",y = "Brecha") +
+  theme_minimal()
+
+ggplot(df_3, aes(x = Periodo, y = brecha_paro)) +
+  geom_line( size = 1.2) +
+  geom_point(size = 2) +
+  facet_wrap(~ Edad, ncol = 2) +  
+  labs(title = "Evolución de la brecha de paro (Mujeres - Hombres)",x = "Año",y = "Brecha") +
+  theme_minimal()
+
+colores_vivos <- c(
+  "#FF4B00", "#00FFFF", "#FFD300", "#FF1493",
+  "#00FF00", "#1E90FF", "#FF7F50", "#ADFF2F",
+  "#DA70D6", "#FF4500", "#00CED1", "#FFFF66"
+)
+ggplot(brecha_edades, aes(x = Periodo, y = brecha_paro,colour = Edad)) +
+  geom_line( size = 0.5) +
+  geom_point()  +
+  labs(title = "Evolución de la brecha de paro (Mujeres - Hombres)",x = "Año",y = "Brecha") +
+  theme_minimal()
+```
+Los primeros gráficos utilizan facet_wrap() para mostrar la evolución temporal de la brecha de paro dentro de cada grupo de edad. Cada panel representa un intervalo etario y permite observar cómo la diferencia entre hombres y mujeres ha variado a lo largo del tiempo. Estas visualizaciones, evidencian que la brecha no se comporta de manera homogénea entre generaciones: mientras que en los grupos más jóvenes las diferencias tienden a fluctuar con mayor intensidad, en los grupos intermedios y de mayor edad la brecha presenta una evolución más estable, aunque persiste una desigualdad estructural en la mayoría de los casos.
+
+Por último, se incluye una representación global en la que se superponen todas las series de edad en un mismo gráfico, utilizando una paleta de colores vivos definida manualmente. Este gráfico tiene un carácter eminentemente exploratorio y permite comparar visualmente la magnitud y la variabilidad de la brecha de paro entre cohortes. En conjunto, este bloque de código contribuye a profundizar en el análisis intergeneracional de la desigualdad laboral, revelando que las diferencias por género en el desempleo no afectan por igual a todos los grupos de edad y que ciertos tramos, especialmente los más jóvenes, muestran una mayor volatilidad a lo largo del tiempo.
+
+
+## Gráfica de Barras comparación grupos de edades con mayor brecha en 2006 y en 2024
+
+En este bloque de código se elaboran una serie de gráficos exploratorios de barras destinados a analizar la evolución de la brecha de paro por grupos de edad a lo largo del tiempo. Para ello, a partir del conjunto brecha_edades, que contiene la diferencia entre las tasas de paro femeninas y masculinas, se genera un conjunto de gráficos individuales por año mediante la función lapply(). En cada uno de ellos, las barras representan la magnitud de la brecha en los distintos grupos de edad, mientras que la línea discontinua negra indica la media general de la brecha para ese año. De esta forma, el código permite observar en paralelo la estructura intergeneracional de las desigualdades laborales y cómo varía la media de brecha entre periodos.
+
+```{r}
+
+a1<- brecha_edades %>% filter(Periodo %in% 2024)
+
+library(ggplot2)
+library(dplyr)
+
+rango_y <- range(brecha_edades$brecha_paro)
+años<- unique(datos$Periodo)
+
+
+grafico_brecha_paro_por_año<-lapply(años, function(año){
+  brecha_edades %>% 
+    filter(Periodo==año) %>% 
+    ggplot( aes(x = factor(Edad, levels = unique(Edad)), y = brecha_paro)) +
+  geom_col(fill = "steelblue") +
+ ylim(rango_y) +
+  labs(title = paste("Brecha de paro por grupo de edad -", año),x = "Grupo de edad",y = "Brecha ") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1) )+
+    geom_hline(yintercept = mean(brecha_edades$brecha_paro[brecha_edades$Periodo == año]),
+               color = "grey10", linetype = "dashed", linewidth = 1) 
+})
+
+grafico_brecha_paro_por_año
+
+```
+Los gráficos resultantes muestran, de forma clara y comparativa, cómo la intensidad de la brecha de género en el desempleo varía según la edad y el momento temporal. En los primeros años analizados, la brecha es especialmente elevada entre los jóvenes, lo que evidencia una mayor vulnerabilidad del empleo femenino en los primeros tramos de edad. En cambio, en los años más recientes para esos tramos de edad, las diferencias tienden a moderarse y presentan un patrón más equilibrado entre grupos, aunque persisten desigualdades estructurales en los segmentos intermedios y de mayor edad.
+
+En conjunto, este bloque  busca ofrecer una visión desagregada y evolutiva de la brecha de paro por edad. Gracias a la representación mediante diagramas de barras, se facilita la comparación entre grupos generacionales y se identifican con claridad los grupos que más contribuyen a mantener las disparidades laborales entre hombres y mujeres a lo largo del tiempo.
+
+
+En el siguiente bloque de código se genera una animación que muestra la evolución de la brecha de paro por grupo de edad a lo largo del tiempo, mediante transition_states() y ease_aes(), se define la animación temporal por años, que se renderiza y guarda como un archivo GIF utilizando las funciones animate() y anim_save().
+```{r}
+library(ggplot2)
+library(gganimate)
+library(dplyr)
+library(gifski)
+
+# Media por año
+medias_anio <- brecha_edades %>%
+  group_by(Periodo) %>%
+  summarise(media = mean(brecha_paro, na.rm = TRUE))
+
+# Gráfico
+grafico_animado <- ggplot(brecha_edades,
+                          aes(x = factor(Edad, levels = unique(Edad)),
+                              y = brecha_paro)) +
+  geom_col(aes(fill = "Brecha de paro")) +   
+  geom_hline(data = medias_anio,
+             aes(yintercept = media, color = "Media anual"),   
+             linetype = "dashed", linewidth = 1) +
+  scale_fill_manual(name="Relleno", values = c("Brecha de paro" = "steelblue")) +
+  scale_color_manual( name="Linea",values = c("Media anual" = "black")) +
+  labs(
+    title = "Brecha de paro por grupo de edad — Año: {closest_state}",
+    x = "Grupo de edad",
+    y = "Brecha"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.title = element_text(face = "bold"),
+        legend.position = "top") +
+  transition_states(Periodo, transition_length = 2, state_length = 1) +
+  ease_aes("linear")
+
+# Animar
+animacion <- animate(
+  grafico_animado,
+  nframes = length(unique(brecha_edades$Periodo)) * 10,
+  fps = 10,
+  renderer = gifski_renderer(),
+  width = 800,
+  height = 600
+)
+
+anim_save("brecha_paro.gif", animation = animacion)
+
+
+browseURL("brecha_paro.gif")
+```
+
+
+
+
+
 
 
 # Distribución de la población en el mercado laboral
+
+## Composición del mercado laboral 
+
+En este bloque de código se genera un gráfico exploratorio con el propósito de comprobar la visualización de la composición del mercado laboral antes de automatizar el proceso para todos los años. Para ello, se filtran los datos del año 2024 y se seleccionan las variables relevantes relacionadas con el estado laboral (*Activos, Ocupados, Parados e Inactivos*), junto con la edad y el sexo. Posteriormente, mediante la función `pivot_longer()`, se reorganiza la tabla a formato largo, lo que permite representar las distintas categorías laborales como valores dentro de una misma variable (*Estado*), facilitando así la creación de un gráfico apilado en *ggplot2*.
+
+El gráfico resultante muestra la distribución proporcional de la población según su situación laboral y grupo de edad, diferenciando entre hombres y mujeres mediante `facet_wrap(~Sexo)`. Se emplea `geom_col(position = "fill")` para que las barras representen proporciones y no valores absolutos, y se aplican ajustes estéticos para mejorar la legibilidad, como la rotación de etiquetas del eje X y el uso de `theme_minimal()`. Este gráfico sirvió como prueba inicial para evaluar la claridad y estructura de la visualización antes de desarrollar la función que posteriormente generó automáticamente el mismo tipo de gráfico para todos los años del periodo analizado.
+
+```{r}
+datos_composicion_2024<- datos %>% 
+  filter(Periodo==2024) %>% 
+  select(Periodo,Edad,Sexo,Activos,Ocupados,Parados,Inactivos) %>% 
+  pivot_longer(cols = c(Inactivos,Ocupados,Parados),names_to = "Estado",values_to = "N_Personas")
+  
+datos_composicion_2024 %>%
+  ggplot(aes(x = Edad, y = N_Personas, fill = Estado)) +
+  geom_col(position = "fill") +
+  labs(
+    title = "Composición del mercado laboral por grupo de edad en 2024",
+    x = "Grupo de edad",
+    y = "Proporción",
+    fill = "Estado"
+  ) +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  facet_wrap(~Sexo)
+```
+Tras la comprobación inicial con los datos de 2024, se elaboró este bloque de código para automatizar la generación del mismo tipo de gráfico para todos los años del conjunto de datos. Para ello, se utiliza la función `lapply()`, que aplica el mismo procedimiento de visualización a cada año contenido en la variable `años`. Dentro de la función, los datos se filtran por periodo y se representa la composición del mercado laboral mediante `geom_col(position = "fill")`, mostrando la proporción de cada estado laboral (ocupados, parados e inactivos) dentro de cada grupo de edad.
+
+El código utiliza `facet_wrap(~Sexo)` para mostrar en paneles separados la información correspondiente a hombres y mujeres. El título de cada gráfico se personaliza dinámicamente con el año correspondiente mediante `paste()`. Este procedimiento permitió obtener una serie de gráficos anuales, facilitando así el análisis comparativo de la evolución de la estructura del mercado laboral a lo largo del tiempo y entre sexos.
+
+```{r}
+
+datos_composicion<- datos  %>% 
+  select(Periodo,Edad,Sexo,Activos,Ocupados,Parados,Inactivos) %>% 
+  pivot_longer(cols = c(Inactivos,Ocupados,Parados),names_to = "Estado",values_to = "N_Personas")
+
+años<- unique(datos_composicion$Periodo)
+
+graficos_composicion_por_año <- lapply(años, function(año) {
+  datos_composicion %>%
+    filter(Periodo == año) %>%
+    ggplot(aes(x =factor(Edad, levels = unique(Edad)), y = N_Personas, fill = Estado)) +
+    geom_col(position = "fill") +
+    labs(
+      title = paste("Composición del mercado laboral por grupo de edad -", año),
+      x = "Grupo de edad",
+      y = "Proporción",
+      fill = "Estado"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+    facet_wrap(~Sexo)#Añadir o quitar según queramos comparar hombres y mujeres o no 
+})
+
+graficos_composicion_por_año
+```
+
+Del análisis de los gráficos se observa una estructura bastante estable del mercado laboral por edad y sexo a lo largo del tiempo, con ligeras variaciones asociadas a los ciclos económicos. En ambos sexos, el grupo central de edad (30-54 años) concentra la mayor proporción de personas ocupadas, mientras que los extremos —jóvenes y mayores— presentan una mayor presencia de inactivos. Las mujeres muestran sistemáticamente una menor proporción de ocupación y una mayor de inactividad en comparación con los hombres, aunque esta diferencia tiende a reducirse en los años más recientes. Asimismo, la proporción de personas paradas es más significativa en los grupos jóvenes, reflejando una mayor vulnerabilidad del empleo juvenil. En conjunto, los gráficos ponen de manifiesto que, pese a los avances en participación femenina y la estabilidad general del empleo en edades medias, persisten desigualdades de género e importantes diferencias intergeneracionales dentro del mercado laboral.
+
+En este bloque de código se genera una animación en formato GIF que muestra la evolución de la composición del mercado laboral por grupo de edad y sexo a lo largo del tiempo. Siguiendo el mismo procedimiento utilizado en el ejercicio anterior, se crea primero el gráfico base con ggplot2 y posteriormente se aplica la función `animate()` del paquete gganimate, especificando el número de fotogramas y la velocidad de transición. Finalmente, la animación se guarda mediante `anim_save()` como un archivo GIF titulado “composicion_mercado.gif”.
+```{r}
+library(gifski)
+graph1 <- ggplot(datos_composicion, 
+                 aes(x = factor(Edad, levels = unique(Edad)),
+                     y = N_Personas, fill = Estado)) +
+  geom_col(position = "fill") +
+  facet_wrap(~Sexo) +
+  labs(
+    title = "Composición del mercado laboral por grupo de edad - Año: {frame_time}",
+    x = "Grupo de edad",
+    y = "Proporción",
+    fill = "Estado"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  transition_time(Periodo) +
+  ease_aes('linear')
+animacion <- animate(graph1, nframes = 100, fps = 10, renderer = gifski_renderer())
+anim_save("composicion_mercado.gif", animation = animacion)
+```
+##Proporción de parados
+En este bloque de código se genera una serie de gráficos que representan la distribución del paro dentro de cada sexo por grupo de edad y año. Para ello, se utiliza una estructura, que permite crear automáticamente un gráfico por cada año disponible en el conjunto de datos. Primero, los datos se filtran por periodo y se agrupan por sexo y año, tras lo cual se calcula la proporción que representa cada grupo de edad dentro del total de personas paradas del mismo sexo (`Parados / sum(Parados)`).
+
+A continuación, se construyen los gráficos con ggplot2, empleando `geom_col(position = "dodge")` para comparar visualmente la distribución entre hombres y mujeres dentro de cada grupo de edad. El objetivo de este análisis es observar cómo se reparte el desempleo dentro de cada sexo a lo largo del tiempo, identificando posibles diferencias estructurales entre hombres y mujeres en función de la edad. De esta manera, se obtiene una visión más detallada del peso relativo de cada grupo de edad en el total de personas paradas de cada sexo y su evolución temporal.
+
+
+```{r}
+graficos_parados_proporcion_por_año<- lapply(años, function(año){
+datos %>%
+  filter(Periodo==año) %>% 
+  group_by(Sexo, Periodo) %>%
+  mutate(Proporcion_parados_en_sexo = Parados / sum(Parados)) %>%
+  ungroup() %>%
+  ggplot(aes(x = factor(Edad, levels = unique(Edad)), y = Proporcion_parados_en_sexo, fill = Sexo)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = paste("Distribución del paro dentro de cada sexo -",año),
+    x = "Grupo de edad",
+    y = "Proporción del total de parados del mismo sexo",
+    fill = "Sexo"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+})
+
+graficos_parados_proporcion_por_año
+```
+En estas gráficas se aprecia cómo la distribución del paro dentro de cada sexo ha cambiado en los últimos años, influida por transformaciones estructurales del mercado laboral y demográficas. La elevación progresiva de la edad de jubilación y el retraso en la salida definitiva del mercado laboral han provocado un aumento en la proporción de personas activas en edades más avanzadas, lo que se traduce también en una mayor representación del paro entre los grupos de 55 años o más. Esto indica que el desempleo ya no es un fenómeno concentrado exclusivamente en edades intermedias, sino que se extiende también hacia los trabajadores de mayor edad, quienes permanecen más tiempo en el mercado laboral. Por el contrario, los grupos más jóvenes (de 16 a 24 años) han reducido su presencia relativa en el total de personas desempleadas, debido principalmente a una incorporación más tardía al mercado laboral como resultado del alargamiento de la etapa educativa y del aumento de la formación superior.
+
+En cuanto al análisis por género, se observa que la distribución del paro dentro de cada sexo mantiene ciertas similitudes, pero también muestra matices importantes. En los grupos de edad intermedia (25-54 años), las mujeres tienden a concentrar una mayor proporción del desempleo dentro de su propio sexo, lo que refleja una persistente desigualdad estructural en el acceso y la estabilidad del empleo femenino, especialmente en etapas donde la conciliación familiar y laboral juega un papel determinante. Sin embargo, entre los hombres, el paro se distribuye de forma algo más homogénea entre los distintos grupos de edad, con un incremento más visible en las edades avanzadas, vinculado al impacto de los sectores más cíclicos (como la construcción o la industria) y a la dificultad de reinserción laboral tras la pérdida del empleo.
+
+En conjunto, estas gráficas ponen de manifiesto un proceso de envejecimiento del desempleo y una convergencia progresiva entre hombres y mujeres en la estructura interna del paro, aunque todavía persisten diferencias derivadas de los roles laborales y sociales tradicionales. Mientras los hombres mayores ganan peso dentro del paro total por el retraso en la jubilación, las mujeres siguen mostrando una mayor vulnerabilidad en las edades centrales, reflejando las desigualdades de género que aún caracterizan el mercado laboral español.
+
+En este bloque de código se genera la animación que muestra la evolución de la distribución del paro por sexo y grupo de edad a lo largo de los años. Para ello, primero se calcula la proporción de personas paradas dentro de cada sexo y grupo de edad en cada año, lo que permite comparar la estructura interna del desempleo entre hombres y mujeres. Posteriormente, se aplica una transformación adicional sobre la variable Edad utilizando expresiones regulares. En concreto, se extraen los valores numéricos iniciales de cada etiqueta de edad (por ejemplo, “16”, “20”, “25”, etc.) y se ordenan de forma ascendente. De este modo, se eliminan los caracteres no numéricos y se corrige el problema del grupo “70 y más años”, que antes aparecía desordenado en el eje. Finalmente, con los datos ordenados, se utiliza el paquete gganimate para representar año a año cómo varía la composición del desempleo entre hombres y mujeres, generando un GIF dinámico que facilita la interpretación temporal del fenómeno.
+
+```{r}
+library(ggplot2)
+library(gganimate)
+library(dplyr)
+library(gifski)
+library(stringr)
+
+datos_anim <- datos %>%
+  group_by(Sexo, Periodo, Edad) %>%
+  summarise(Parados = sum(Parados, na.rm = TRUE)) %>%
+  group_by(Sexo, Periodo) %>%
+  mutate(Proporcion_parados_en_sexo = Parados / sum(Parados)) %>%
+  ungroup()
+
+edades_orden <- datos_anim %>%
+  distinct(Edad) %>%
+  mutate(inicio = as.integer(str_extract(Edad, "\\d+"))) %>%  
+  arrange(inicio) %>%
+  pull(Edad)
+
+datos_anim <- datos_anim %>%
+  mutate(Edad = factor(Edad, levels = edades_orden))
+
+grafico_animado <- ggplot(datos_anim, 
+                          aes(x = Edad, 
+                              y = Proporcion_parados_en_sexo, 
+                              fill = Sexo)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Distribución del paro dentro de cada sexo - Año: {frame_time}",
+    x = "Grupo de edad",
+    y = "Proporción del total de parados del mismo sexo",
+    fill = "Sexo"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  transition_time(Periodo) +
+  ease_aes("linear")
+
+animacion <- animate(
+  grafico_animado,
+  nframes = length(unique(datos_anim$Periodo)) * 10,  
+  fps = 10,
+  width = 800,
+  height = 600,
+  renderer = gifski_renderer()
+)
+anim_save("distribucion_paro_sexo.gif", animation = animacion)
+
+browseURL("distribucion_paro_sexo.gif")
+
+```
+
+
+
+
+
+
+
+
+
 
 
 # Resultados
@@ -665,360 +1024,9 @@ los jóvenes (16–24 años) y mayores (65+) presentan menor participación feme
 # --------------------------JOSE-------------
 
 
-# Gráficos Brecha
-Importamos el dataframe para trabajar con el: 
-```{r}
-datos<-read.csv("data/df_clean.csv")
-```
-
-Tenemos el dataframe, listo para trabajar cargado en la variable datos.
-
-##Evolucion de la tasa de paro por género y evolución de la brecha de la tasa de paro por género
-
-En este bloque de código se construyen varias representaciones gráficas con el fin de analizar la evolución de la tasa de paro y la brecha de género a lo largo del tiempo. Para ello, se parte de una tabla en la que se calcula la variable *brecha_paro*, definida como la diferencia entre la tasa de paro de mujeres y la de hombres. Posteriormente, los datos se agrupan por periodo para obtener las tasas medias anuales de paro por sexo y la brecha media correspondiente. 
-
-```{r}
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-
-# 1º crear una tabla con la variable brecha_paro 
-brecha <- datos %>% 
-  select(Periodo, Edad,Sexo,Tasa_paro) %>% 
-  pivot_wider(names_from = Sexo, values_from = Tasa_paro) %>% 
-  mutate(brecha_paro=Mujeres-Hombres)
-brecha
-
-#2º Agrupar esas fechas por periodo, para asi no diferenciar entre grupos de edades y tener la brecha total
-brechas_total <- brecha %>%
-  group_by(Periodo) %>%
-  summarise(
-    tasa_hombres = mean(Hombres, na.rm = TRUE),
-    tasa_mujeres = mean(Mujeres, na.rm = TRUE),
-    brecha_paro_total = mean(brecha_paro, na.rm = TRUE)
-  )
-brechas_total
-
-evo_brecha_total <- ggplot(brechas_total,aes(x=Periodo,y=brecha_paro_total)) + geom_line()+geom_point()+labs(title = "Evolución de la brecha de paro total",x="años",y="Brecha de tasa de paro")
-evo_brecha_total
-evo_tasa_total <-  ggplot(brechas_total, aes(x = Periodo)) +geom_line(aes(y = tasa_hombres, color = "Hombres")) +geom_point(aes(y = tasa_hombres, color = "Hombres")) +geom_line(aes(y = tasa_mujeres, color = "Mujeres")) +geom_point(aes(y = tasa_mujeres, color = "Mujeres")) +labs(title = "Evolución de la tasa de paro total por sexo",x = "Año",y = "Tasa de paro (%)",color = "Sexo")
-evo_tasa_total
-
-evo_tasa_y_brecha<-ggplot(brechas_total, aes(x = Periodo)) +geom_line(aes(y = tasa_hombres, color = "Hombres"), size = 1.3) +geom_point(aes(y = tasa_hombres, color = "Hombres"), size = 2) +geom_line(aes(y = tasa_mujeres, color = "Mujeres"), size = 1.3) +geom_point(aes(y = tasa_mujeres, color = "Mujeres"), size = 2) +geom_line(aes(y = brecha_paro_total, color = "Brecha"), size = 1.2,) +geom_point(aes(y = brecha_paro_total, color = "Brecha"), size = 2) +labs(title = "Evolución de la tasa de paro total por sexo y brecha",x = "Año",y = "Tasa de paro (%)",) +scale_color_manual(values = c("Hombres" = "blue", "Mujeres" = "red", "Brecha" = "black"))+theme_minimal()
-evo_tasa_y_brecha
-```
-El primer gráfico (`evo_brecha_total`) representa la evolución de la brecha de paro total tanto con lineas como con puntos para mostrar la tendencia y los valores anuales. En él se observa cómo la diferencia entre hombres y mujeres en la tasa de paro varía a lo largo del tiempo, con un aumento notable en los años posteriores a la crisis de 2008 y una ligera reducción en la última etapa analizada. Por su parte, el segundo gráfico (`evo_tasa_total`) muestra la evolución de la tasa de paro de hombres y mujeres de forma independiente, utilizando colores diferenciados para cada grupo. Esta visualización permite comparar directamente la evolución de ambos sexos, destacando la persistencia de una mayor tasa de paro entre las mujeres en prácticamente todos los años del periodo estudiado.
-
-Por último, el tercer gráfico (`evo_tasa_y_brecha`) combina ambas perspectivas en una única figura. Se incluyen las líneas de hombres, mujeres y brecha, diferenciadas mediante colores específicos definidos con `scale_color_manual()`. Este enfoque conjunto facilita observar la relación entre las dos tasas y su diferencia a lo largo del tiempo, ofreciendo una visión global de la evolución de las desigualdades de género en el desempleo. En conjunto, el código y las representaciones resultantes permiten analizar de forma visual y comparativa la magnitud y la persistencia de la brecha de género en el mercado laboral español.
-
-## Evolucion de la tasa de paro y su brecha por grupo de edad
-En este bloque de código se elaboran una serie de gráficos exploratorios con el objetivo de analizar la evolución de la brecha de paro entre mujeres y hombres desagregada por grupos de edad. A partir del conjunto de datos principal, se construye una tabla denominada brecha_edades que contiene la tasa de paro por sexo y edad, y se calcula la variable brecha_paro como la diferencia entre las tasas de mujeres y hombres. Posteriormente, los grupos de edad se clasifican en intervalos de diez años, y los datos se dividen en distintos subconjuntos (df_1, df_2, df_3) para facilitar la representación y mejorar la legibilidad de los gráficos.
-
-```{r}
-brecha_edades <- datos %>% 
-  select(Sexo, Edad, Periodo,Tasa_paro) %>% 
-  pivot_wider(names_from = Sexo, values_from = Tasa_paro) %>% 
-  mutate(brecha_paro=Mujeres-Hombres)
-brecha_edades
-
-unique(brecha_edades$Edad)
-library(ggplot2)
-#Para hacerlo con un unico dataframe, es muy complejo de graficar, asi que es mejor dividirlo en varios dataframes, para que así sea mas sencillo trabajar
-edades_1 <- c("De 16 a 19 años", "De 20 a 24 años", "De 25 a 29 años", "De 30 a 34 años")
-edades_2 <- c("De 35 a 39 años", "De 40 a 44 años", "De 45 a 49 años", "De 50 a 54 años")
-edades_3 <- c("De 55 a 59 años", "De 60 a 64 años", "De 65 a 69 años", "De 70 y más años")
-
-df_1 <- brecha_edades %>% filter(Edad %in% edades_1)
-df_2 <- brecha_edades %>% filter(Edad %in% edades_2)
-df_3 <- brecha_edades %>%  filter(Edad %in% edades_3)
-
-ggplot(df_1, aes(x = Periodo, y = brecha_paro)) +
-  geom_line( size = 1.2) +
-  geom_point(size = 2) +
-  facet_wrap(~ Edad, ncol = 2) +  # ← cuadrícula 2×2
-  labs(title = "Evolución de la brecha de paro (Mujeres - Hombres)",x = "Año",y = "Brecha") +
-  theme_minimal()
-
-ggplot(df_2, aes(x = Periodo, y = brecha_paro)) +
-  geom_line( size = 1.2) +
-  geom_point(size = 2) +
-  facet_wrap(~ Edad, ncol = 2) +  
-  labs(title = "Evolución de la brecha de paro (Mujeres - Hombres)",x = "Año",y = "Brecha") +
-  theme_minimal()
-
-ggplot(df_3, aes(x = Periodo, y = brecha_paro)) +
-  geom_line( size = 1.2) +
-  geom_point(size = 2) +
-  facet_wrap(~ Edad, ncol = 2) +  
-  labs(title = "Evolución de la brecha de paro (Mujeres - Hombres)",x = "Año",y = "Brecha") +
-  theme_minimal()
-
-colores_vivos <- c(
-  "#FF4B00", "#00FFFF", "#FFD300", "#FF1493",
-  "#00FF00", "#1E90FF", "#FF7F50", "#ADFF2F",
-  "#DA70D6", "#FF4500", "#00CED1", "#FFFF66"
-)
-ggplot(brecha_edades, aes(x = Periodo, y = brecha_paro,colour = Edad)) +
-  geom_line( size = 0.5) +
-  geom_point()  +
-  labs(title = "Evolución de la brecha de paro (Mujeres - Hombres)",x = "Año",y = "Brecha") +
-  theme_minimal()
-```
-Los primeros gráficos utilizan facet_wrap() para mostrar la evolución temporal de la brecha de paro dentro de cada grupo de edad. Cada panel representa un intervalo etario y permite observar cómo la diferencia entre hombres y mujeres ha variado a lo largo del tiempo. Estas visualizaciones, evidencian que la brecha no se comporta de manera homogénea entre generaciones: mientras que en los grupos más jóvenes las diferencias tienden a fluctuar con mayor intensidad, en los grupos intermedios y de mayor edad la brecha presenta una evolución más estable, aunque persiste una desigualdad estructural en la mayoría de los casos.
-
-Por último, se incluye una representación global en la que se superponen todas las series de edad en un mismo gráfico, utilizando una paleta de colores vivos definida manualmente. Este gráfico tiene un carácter eminentemente exploratorio y permite comparar visualmente la magnitud y la variabilidad de la brecha de paro entre cohortes. En conjunto, este bloque de código contribuye a profundizar en el análisis intergeneracional de la desigualdad laboral, revelando que las diferencias por género en el desempleo no afectan por igual a todos los grupos de edad y que ciertos tramos, especialmente los más jóvenes, muestran una mayor volatilidad a lo largo del tiempo.
-
-## Gráfica de Barras comparación grupos de edades con mayor brecha en 2006 y en 2024
-
-En este bloque de código se elaboran una serie de gráficos exploratorios de barras destinados a analizar la evolución de la brecha de paro por grupos de edad a lo largo del tiempo. Para ello, a partir del conjunto brecha_edades, que contiene la diferencia entre las tasas de paro femeninas y masculinas, se genera un conjunto de gráficos individuales por año mediante la función lapply(). En cada uno de ellos, las barras representan la magnitud de la brecha en los distintos grupos de edad, mientras que la línea discontinua negra indica la media general de la brecha para ese año. De esta forma, el código permite observar en paralelo la estructura intergeneracional de las desigualdades laborales y cómo varía la media de brecha entre periodos.
-
-```{r}
-
-a1<- brecha_edades %>% filter(Periodo %in% 2024)
-
-library(ggplot2)
-library(dplyr)
-
-rango_y <- range(brecha_edades$brecha_paro)
-años<- unique(datos$Periodo)
 
 
-grafico_brecha_paro_por_año<-lapply(años, function(año){
-  brecha_edades %>% 
-    filter(Periodo==año) %>% 
-    ggplot( aes(x = factor(Edad, levels = unique(Edad)), y = brecha_paro)) +
-  geom_col(fill = "steelblue") +
- ylim(rango_y) +
-  labs(title = paste("Brecha de paro por grupo de edad -", año),x = "Grupo de edad",y = "Brecha ") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45,hjust = 1) )+
-    geom_hline(yintercept = mean(brecha_edades$brecha_paro[brecha_edades$Periodo == año]),
-               color = "grey10", linetype = "dashed", linewidth = 1) 
-})
 
-grafico_brecha_paro_por_año
-
-```
-Los gráficos resultantes muestran, de forma clara y comparativa, cómo la intensidad de la brecha de género en el desempleo varía según la edad y el momento temporal. En los primeros años analizados, la brecha es especialmente elevada entre los jóvenes, lo que evidencia una mayor vulnerabilidad del empleo femenino en los primeros tramos de edad. En cambio, en los años más recientes para esos tramos de edad, las diferencias tienden a moderarse y presentan un patrón más equilibrado entre grupos, aunque persisten desigualdades estructurales en los segmentos intermedios y de mayor edad.
-
-En conjunto, este bloque  busca ofrecer una visión desagregada y evolutiva de la brecha de paro por edad. Gracias a la representación mediante diagramas de barras, se facilita la comparación entre grupos generacionales y se identifican con claridad los grupos que más contribuyen a mantener las disparidades laborales entre hombres y mujeres a lo largo del tiempo.
-
-
-En el siguiente bloque de código se genera una animación que muestra la evolución de la brecha de paro por grupo de edad a lo largo del tiempo, mediante transition_states() y ease_aes(), se define la animación temporal por años, que se renderiza y guarda como un archivo GIF utilizando las funciones animate() y anim_save().
-```{r}
-library(ggplot2)
-library(gganimate)
-library(dplyr)
-library(gifski)
-
-# Media por año
-medias_anio <- brecha_edades %>%
-  group_by(Periodo) %>%
-  summarise(media = mean(brecha_paro, na.rm = TRUE))
-
-# Gráfico
-grafico_animado <- ggplot(brecha_edades,
-                          aes(x = factor(Edad, levels = unique(Edad)),
-                              y = brecha_paro)) +
-  geom_col(aes(fill = "Brecha de paro")) +   
-  geom_hline(data = medias_anio,
-             aes(yintercept = media, color = "Media anual"),   
-             linetype = "dashed", linewidth = 1) +
-  scale_fill_manual(name="Relleno", values = c("Brecha de paro" = "steelblue")) +
-  scale_color_manual( name="Linea",values = c("Media anual" = "black")) +
-  labs(
-    title = "Brecha de paro por grupo de edad — Año: {closest_state}",
-    x = "Grupo de edad",
-    y = "Brecha"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.title = element_text(face = "bold"),
-        legend.position = "top") +
-  transition_states(Periodo, transition_length = 2, state_length = 1) +
-  ease_aes("linear")
-
-# Animar
-animacion <- animate(
-  grafico_animado,
-  nframes = length(unique(brecha_edades$Periodo)) * 10,
-  fps = 10,
-  renderer = gifski_renderer(),
-  width = 800,
-  height = 600
-)
-
-anim_save("brecha_paro.gif", animation = animacion)
-
-
-browseURL("brecha_paro.gif")
-```
-## Composición del mercado laboral 
-
-En este bloque de código se genera un gráfico exploratorio con el propósito de comprobar la visualización de la composición del mercado laboral antes de automatizar el proceso para todos los años. Para ello, se filtran los datos del año 2024 y se seleccionan las variables relevantes relacionadas con el estado laboral (*Activos, Ocupados, Parados e Inactivos*), junto con la edad y el sexo. Posteriormente, mediante la función `pivot_longer()`, se reorganiza la tabla a formato largo, lo que permite representar las distintas categorías laborales como valores dentro de una misma variable (*Estado*), facilitando así la creación de un gráfico apilado en *ggplot2*.
-
-El gráfico resultante muestra la distribución proporcional de la población según su situación laboral y grupo de edad, diferenciando entre hombres y mujeres mediante `facet_wrap(~Sexo)`. Se emplea `geom_col(position = "fill")` para que las barras representen proporciones y no valores absolutos, y se aplican ajustes estéticos para mejorar la legibilidad, como la rotación de etiquetas del eje X y el uso de `theme_minimal()`. Este gráfico sirvió como prueba inicial para evaluar la claridad y estructura de la visualización antes de desarrollar la función que posteriormente generó automáticamente el mismo tipo de gráfico para todos los años del periodo analizado.
-
-```{r}
-datos_composicion_2024<- datos %>% 
-  filter(Periodo==2024) %>% 
-  select(Periodo,Edad,Sexo,Activos,Ocupados,Parados,Inactivos) %>% 
-  pivot_longer(cols = c(Inactivos,Ocupados,Parados),names_to = "Estado",values_to = "N_Personas")
-  
-datos_composicion_2024 %>%
-  ggplot(aes(x = Edad, y = N_Personas, fill = Estado)) +
-  geom_col(position = "fill") +
-  labs(
-    title = "Composición del mercado laboral por grupo de edad en 2024",
-    x = "Grupo de edad",
-    y = "Proporción",
-    fill = "Estado"
-  ) +
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  facet_wrap(~Sexo)
-```
-Tras la comprobación inicial con los datos de 2024, se elaboró este bloque de código para automatizar la generación del mismo tipo de gráfico para todos los años del conjunto de datos. Para ello, se utiliza la función `lapply()`, que aplica el mismo procedimiento de visualización a cada año contenido en la variable `años`. Dentro de la función, los datos se filtran por periodo y se representa la composición del mercado laboral mediante `geom_col(position = "fill")`, mostrando la proporción de cada estado laboral (ocupados, parados e inactivos) dentro de cada grupo de edad.
-
-El código utiliza `facet_wrap(~Sexo)` para mostrar en paneles separados la información correspondiente a hombres y mujeres. El título de cada gráfico se personaliza dinámicamente con el año correspondiente mediante `paste()`. Este procedimiento permitió obtener una serie de gráficos anuales, facilitando así el análisis comparativo de la evolución de la estructura del mercado laboral a lo largo del tiempo y entre sexos.
-
-```{r}
-
-datos_composicion<- datos  %>% 
-  select(Periodo,Edad,Sexo,Activos,Ocupados,Parados,Inactivos) %>% 
-  pivot_longer(cols = c(Inactivos,Ocupados,Parados),names_to = "Estado",values_to = "N_Personas")
-
-años<- unique(datos_composicion$Periodo)
-
-graficos_composicion_por_año <- lapply(años, function(año) {
-  datos_composicion %>%
-    filter(Periodo == año) %>%
-    ggplot(aes(x =factor(Edad, levels = unique(Edad)), y = N_Personas, fill = Estado)) +
-    geom_col(position = "fill") +
-    labs(
-      title = paste("Composición del mercado laboral por grupo de edad -", año),
-      x = "Grupo de edad",
-      y = "Proporción",
-      fill = "Estado"
-    ) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-    facet_wrap(~Sexo)#Añadir o quitar según queramos comparar hombres y mujeres o no 
-})
-
-graficos_composicion_por_año
-```
-Del análisis de los gráficos se observa una estructura bastante estable del mercado laboral por edad y sexo a lo largo del tiempo, con ligeras variaciones asociadas a los ciclos económicos. En ambos sexos, el grupo central de edad (30-54 años) concentra la mayor proporción de personas ocupadas, mientras que los extremos —jóvenes y mayores— presentan una mayor presencia de inactivos. Las mujeres muestran sistemáticamente una menor proporción de ocupación y una mayor de inactividad en comparación con los hombres, aunque esta diferencia tiende a reducirse en los años más recientes. Asimismo, la proporción de personas paradas es más significativa en los grupos jóvenes, reflejando una mayor vulnerabilidad del empleo juvenil. En conjunto, los gráficos ponen de manifiesto que, pese a los avances en participación femenina y la estabilidad general del empleo en edades medias, persisten desigualdades de género e importantes diferencias intergeneracionales dentro del mercado laboral.
-
-
-En este bloque de código se genera una animación en formato GIF que muestra la evolución de la composición del mercado laboral por grupo de edad y sexo a lo largo del tiempo. Siguiendo el mismo procedimiento utilizado en el ejercicio anterior, se crea primero el gráfico base con ggplot2 y posteriormente se aplica la función `animate()` del paquete gganimate, especificando el número de fotogramas y la velocidad de transición. Finalmente, la animación se guarda mediante `anim_save()` como un archivo GIF titulado “composicion_mercado.gif”.
-```{r}
-library(gifski)
-graph1 <- ggplot(datos_composicion, 
-                 aes(x = factor(Edad, levels = unique(Edad)),
-                     y = N_Personas, fill = Estado)) +
-  geom_col(position = "fill") +
-  facet_wrap(~Sexo) +
-  labs(
-    title = "Composición del mercado laboral por grupo de edad - Año: {frame_time}",
-    x = "Grupo de edad",
-    y = "Proporción",
-    fill = "Estado"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  transition_time(Periodo) +
-  ease_aes('linear')
-animacion <- animate(graph1, nframes = 100, fps = 10, renderer = gifski_renderer())
-anim_save("composicion_mercado.gif", animation = animacion)
-```
-##Proporción de parados
-En este bloque de código se genera una serie de gráficos que representan la distribución del paro dentro de cada sexo por grupo de edad y año. Para ello, se utiliza una estructura, que permite crear automáticamente un gráfico por cada año disponible en el conjunto de datos. Primero, los datos se filtran por periodo y se agrupan por sexo y año, tras lo cual se calcula la proporción que representa cada grupo de edad dentro del total de personas paradas del mismo sexo (`Parados / sum(Parados)`).
-
-A continuación, se construyen los gráficos con ggplot2, empleando `geom_col(position = "dodge")` para comparar visualmente la distribución entre hombres y mujeres dentro de cada grupo de edad. El objetivo de este análisis es observar cómo se reparte el desempleo dentro de cada sexo a lo largo del tiempo, identificando posibles diferencias estructurales entre hombres y mujeres en función de la edad. De esta manera, se obtiene una visión más detallada del peso relativo de cada grupo de edad en el total de personas paradas de cada sexo y su evolución temporal.
-
-
-```{r}
-graficos_parados_proporcion_por_año<- lapply(años, function(año){
-datos %>%
-  filter(Periodo==año) %>% 
-  group_by(Sexo, Periodo) %>%
-  mutate(Proporcion_parados_en_sexo = Parados / sum(Parados)) %>%
-  ungroup() %>%
-  ggplot(aes(x = factor(Edad, levels = unique(Edad)), y = Proporcion_parados_en_sexo, fill = Sexo)) +
-  geom_col(position = "dodge") +
-  labs(
-    title = paste("Distribución del paro dentro de cada sexo -",año),
-    x = "Grupo de edad",
-    y = "Proporción del total de parados del mismo sexo",
-    fill = "Sexo"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-})
-
-graficos_parados_proporcion_por_año
-```
-En estas gráficas se aprecia cómo la distribución del paro dentro de cada sexo ha cambiado en los últimos años, influida por transformaciones estructurales del mercado laboral y demográficas. La elevación progresiva de la edad de jubilación y el retraso en la salida definitiva del mercado laboral han provocado un aumento en la proporción de personas activas en edades más avanzadas, lo que se traduce también en una mayor representación del paro entre los grupos de 55 años o más. Esto indica que el desempleo ya no es un fenómeno concentrado exclusivamente en edades intermedias, sino que se extiende también hacia los trabajadores de mayor edad, quienes permanecen más tiempo en el mercado laboral. Por el contrario, los grupos más jóvenes (de 16 a 24 años) han reducido su presencia relativa en el total de personas desempleadas, debido principalmente a una incorporación más tardía al mercado laboral como resultado del alargamiento de la etapa educativa y del aumento de la formación superior.
-
-En cuanto al análisis por género, se observa que la distribución del paro dentro de cada sexo mantiene ciertas similitudes, pero también muestra matices importantes. En los grupos de edad intermedia (25-54 años), las mujeres tienden a concentrar una mayor proporción del desempleo dentro de su propio sexo, lo que refleja una persistente desigualdad estructural en el acceso y la estabilidad del empleo femenino, especialmente en etapas donde la conciliación familiar y laboral juega un papel determinante. Sin embargo, entre los hombres, el paro se distribuye de forma algo más homogénea entre los distintos grupos de edad, con un incremento más visible en las edades avanzadas, vinculado al impacto de los sectores más cíclicos (como la construcción o la industria) y a la dificultad de reinserción laboral tras la pérdida del empleo.
-
-En conjunto, estas gráficas ponen de manifiesto un proceso de envejecimiento del desempleo y una convergencia progresiva entre hombres y mujeres en la estructura interna del paro, aunque todavía persisten diferencias derivadas de los roles laborales y sociales tradicionales. Mientras los hombres mayores ganan peso dentro del paro total por el retraso en la jubilación, las mujeres siguen mostrando una mayor vulnerabilidad en las edades centrales, reflejando las desigualdades de género que aún caracterizan el mercado laboral español.
-
-En este bloque de código se genera la animación que muestra la evolución de la distribución del paro por sexo y grupo de edad a lo largo de los años. Para ello, primero se calcula la proporción de personas paradas dentro de cada sexo y grupo de edad en cada año, lo que permite comparar la estructura interna del desempleo entre hombres y mujeres. Posteriormente, se aplica una transformación adicional sobre la variable Edad utilizando expresiones regulares. En concreto, se extraen los valores numéricos iniciales de cada etiqueta de edad (por ejemplo, “16”, “20”, “25”, etc.) y se ordenan de forma ascendente. De este modo, se eliminan los caracteres no numéricos y se corrige el problema del grupo “70 y más años”, que antes aparecía desordenado en el eje. Finalmente, con los datos ordenados, se utiliza el paquete gganimate para representar año a año cómo varía la composición del desempleo entre hombres y mujeres, generando un GIF dinámico que facilita la interpretación temporal del fenómeno.
-
-```{r}
-library(ggplot2)
-library(gganimate)
-library(dplyr)
-library(gifski)
-library(stringr)
-
-datos_anim <- datos %>%
-  group_by(Sexo, Periodo, Edad) %>%
-  summarise(Parados = sum(Parados, na.rm = TRUE)) %>%
-  group_by(Sexo, Periodo) %>%
-  mutate(Proporcion_parados_en_sexo = Parados / sum(Parados)) %>%
-  ungroup()
-
-edades_orden <- datos_anim %>%
-  distinct(Edad) %>%
-  mutate(inicio = as.integer(str_extract(Edad, "\\d+"))) %>%  
-  arrange(inicio) %>%
-  pull(Edad)
-
-datos_anim <- datos_anim %>%
-  mutate(Edad = factor(Edad, levels = edades_orden))
-
-grafico_animado <- ggplot(datos_anim, 
-                          aes(x = Edad, 
-                              y = Proporcion_parados_en_sexo, 
-                              fill = Sexo)) +
-  geom_col(position = "dodge") +
-  labs(
-    title = "Distribución del paro dentro de cada sexo - Año: {frame_time}",
-    x = "Grupo de edad",
-    y = "Proporción del total de parados del mismo sexo",
-    fill = "Sexo"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  transition_time(Periodo) +
-  ease_aes("linear")
-
-animacion <- animate(
-  grafico_animado,
-  nframes = length(unique(datos_anim$Periodo)) * 10,  
-  fps = 10,
-  width = 800,
-  height = 600,
-  renderer = gifski_renderer()
-)
-anim_save("distribucion_paro_sexo.gif", animation = animacion)
-
-browseURL("distribucion_paro_sexo.gif")
-
-```
 
 #---------------------------------------------------
 
