@@ -190,8 +190,6 @@ sapply(df_clean,function(x) sum(is.na(x)))
 ```
 
 
-por último se guarda el dataframe limpio con el nombre `df_clean.csv`
-
 ```{r,echo = FALSE}
 write_csv(df_clean,file = "data/df_clean.csv")
 ```
