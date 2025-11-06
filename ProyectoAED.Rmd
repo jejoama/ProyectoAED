@@ -66,18 +66,20 @@ Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos 
 
 ## Importación y verificación inicial
 
-- **Codificación e importación**: La codificación del los datos brutos es `UFT-8` con una confianza del $100\%$. Archivo delimitado por tabulaciones, se indica que el separador decimal es la coma y que los valores *NA* están codificados como `".."`.
+La codificación de los datos brutos es `UFT-8` con una confianza del $100\%$, el archivo está delimitado por tabulaciones, se indica que el separador decimal es la coma y que los valores *NA* están codificados como `".."`.
 
 ```{r,echo = FALSE}
 df<-read_delim("data/65948.csv", delim = "\t", escape_double = FALSE, na = "..", 
                trim_ws = TRUE,locale = locale(decimal_mark = ","))
 ```
 
+
 Las variables del dataframe original son: Sexo, Edad, Relación con la actividad económica, Periodo y Total.
+
 
 ## Valores faltantes
 
-Los valores ausentes se encuentran concentrados `Total`
+Los valores ausentes se encuentran concentrados en la variable `Total`.
 
 ```{r,echo = FALSE}
 df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% filter(is.na(Total)) %>% ggplot(aes(x=Situacion_Laboral))+geom_bar(aes(fill=Edad))+labs(
@@ -89,7 +91,7 @@ df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% f
   theme_minimal()
 ```
 
-Se observa que los valores faltantes vienen asociados a grupos de edad altos y cuya relación con la actividad económica es "Parados que buscan primer empleo" o "Parados".
+Se observa que los datos faltantes son del tipo MAR, los valores faltantes vienen asociados a grupos de edad altos y cuya relación con la actividad económica es "Parados que buscan primer empleo" o "Parados".
 
 
 # Definición de variables
