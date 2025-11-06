@@ -102,44 +102,102 @@ df_clean <- read_csv("data/df_clean.csv")
 
 # ------------------------ GRÁFICA 4 ------------------
 
-datos_anim <- df_clean %>%
-  group_by(Sexo, Periodo, Edad) %>%
-  summarise(Parados = sum(Parados, na.rm = TRUE)) %>%
-  group_by(Sexo, Periodo) %>%
-  mutate(Proporcion_parados_en_sexo = Parados / sum(Parados)) %>%
-  ungroup()
+# datos_anim <- df_clean %>%
+#   group_by(Sexo, Periodo, Edad) %>%
+#   summarise(Parados = sum(Parados, na.rm = TRUE)) %>%
+#   group_by(Sexo, Periodo) %>%
+#   mutate(Proporcion_parados_en_sexo = Parados / sum(Parados)) %>%
+#   ungroup()
+# 
+# edades_orden <- datos_anim %>%
+#   distinct(Edad) %>%
+#   mutate(inicio = as.integer(str_extract(Edad, "\\d+"))) %>%  
+#   arrange(inicio) %>%
+#   pull(Edad)
+# 
+# datos_anim <- datos_anim %>%
+#   mutate(Edad = factor(Edad, levels = edades_orden))
+# 
+# grafico_animado <- ggplot(datos_anim, 
+#                           aes(x = Edad, 
+#                               y = Proporcion_parados_en_sexo, 
+#                               fill = Sexo)) +
+#   geom_col(position = "dodge") +
+#   labs(
+#     title = "Distribución del paro dentro de cada sexo - Año: {as.integer(frame_time)}",
+#     x = "Grupo de edad",
+#     y = "Proporción del total de parados del mismo sexo",
+#     fill = "Sexo"
+#   ) +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   transition_time(Periodo) +
+#   ease_aes("linear")
+# 
+# animacion <- animate(
+#   grafico_animado,
+#   nframes = length(unique(datos_anim$Periodo)) * 10,  
+#   fps = 10,
+#   width = 800,
+#   height = 600,
+#   renderer = gifski_renderer()
+# )
+# anim_save("gifs/distribucion_paro_sexo.gif", animation = animacion)
 
-edades_orden <- datos_anim %>%
-  distinct(Edad) %>%
-  mutate(inicio = as.integer(str_extract(Edad, "\\d+"))) %>%  
-  arrange(inicio) %>%
-  pull(Edad)
+# ------------------- GRAFICA 5 --------------------------------
+# df_ocup_inact <- df_clean %>%
+#   group_by(Periodo, Sexo) %>%
+#   summarise(
+#     Ocupados = sum(Ocupados, na.rm = TRUE),
+#     Inactivos = sum(Inactivos, na.rm = TRUE),
+#     .groups = "drop"
+#   ) %>%
+#   pivot_longer(cols = c(Ocupados, Inactivos), names_to = "Situacion", values_to = "Personas")
+# 
+# # gráfico animado
+# graph1 <- ggplot(df_ocup_inact, aes(x = Sexo, y = Personas, fill = Situacion)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   labs(
+#     title = "Distribución de ocupados e inactivos por sexo – Año: {as.integer(frame_time)}",
+#     x = "Sexo",
+#     y = "Personas",
+#     fill = "Situación"
+#   ) +
+#   theme_minimal() +
+#   transition_time(Periodo) +
+#   ease_aes('linear')
+# 
+# #  GIF 
+# anim_save("gifs/ocupados_inactivos_sexo.gif", animation = graph1, renderer = gifski_renderer())
 
-datos_anim <- datos_anim %>%
-  mutate(Edad = factor(Edad, levels = edades_orden))
 
-grafico_animado <- ggplot(datos_anim, 
-                          aes(x = Edad, 
-                              y = Proporcion_parados_en_sexo, 
-                              fill = Sexo)) +
-  geom_col(position = "dodge") +
+# ----------------------------- GRÁFICA 6 ------------------------------
+#  Preparar los datos por año
+df_act_inact <- df_clean %>%
+  group_by(Periodo, Sexo) %>%
+  summarise(
+    Activos = sum(Activos, na.rm = TRUE),
+    Inactivos = sum(Inactivos, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  pivot_longer(cols = c(Activos, Inactivos), names_to = "Situacion", values_to = "Personas")
+
+#  Crear el gráfico animado
+graph1 <- ggplot(df_act_inact, 
+                 aes(x = Sexo, y = Personas, fill = Situacion)) +
+  geom_bar(stat = "identity", position = "dodge") +
   labs(
-    title = "Distribución del paro dentro de cada sexo - Año: {as.integer(frame_time)}",
-    x = "Grupo de edad",
-    y = "Proporción del total de parados del mismo sexo",
-    fill = "Sexo"
+    title = "Distribución de activos e inactivos por sexo – Año: {as.integer(frame_time)}",
+    x = "Sexo",
+    y = "Personas",
+    fill = "Situación"
   ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   transition_time(Periodo) +
-  ease_aes("linear")
+  ease_aes('linear')
 
-animacion <- animate(
-  grafico_animado,
-  nframes = length(unique(datos_anim$Periodo)) * 10,  
-  fps = 10,
-  width = 800,
-  height = 600,
-  renderer = gifski_renderer()
-)
-anim_save("gifs/distribucion_paro_sexo.gif", animation = animacion)
+# 3 Crear la animación desde el gráfico
+animacion <- animate(graph1, nframes = 100, fps = 10, renderer = gifski_renderer())
+
+#  Guardar el GIF
+anim_save("gifs/activos_inactivos_sexo.gif", animation = animacion, renderer = gifski_renderer())
