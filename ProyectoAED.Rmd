@@ -101,6 +101,8 @@ df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% f
 Se observa que los datos faltantes son del tipo MAR (Missing At Random). La ausencia de datos viene asociada a grupos de edad altos con una relación con la actividad económica de "Parados que buscan primer empleo" o "Parados". Esta dependencia permite concluir que este valor NA se debe a que es imposible, o extremandamente improbable, que una persona en ese rango de edad busque su primer empleo.
 
 
+
+
 # Definición de variables
 
 El valor de la columna `Total` viene definido con la siguiente expresión:
@@ -187,6 +189,74 @@ df_clean<-df %>%
 ```{r,echo = FALSE}
 write_csv(df_clean,file = "data/df_clean.csv")
 ```
+
+
+## Outliers
+
+Para identificar outliers se va a utilizar el método del rango intercuartílico (IQR)
+
+```{r}
+
+# 1. Función para detectar límites del IQR
+detectar_outliers_iqr <- function(df, tasa_col) {
+  # Calcular Q1, Q3 y IQR globalmente para la tasa
+  Q1 <- quantile(df[[tasa_col]], 0.25, na.rm = TRUE)
+  Q3 <- quantile(df[[tasa_col]], 0.75, na.rm = TRUE)
+  IQR_val <- Q3 - Q1
+  
+  limite_superior <- Q3 + 1.5 * IQR_val
+  limite_inferior <- Q1 - 1.5 * IQR_val
+  
+  # Añadir columna booleana que indica si es outlier
+  df %>%
+    mutate(
+      !!paste0("Outlier_", sub("Tasa_", "", tasa_col)) := case_when(
+        .data[[tasa_col]] > limite_superior ~ "Atípico Superior",
+        .data[[tasa_col]] < limite_inferior ~ "Atípico Inferior",
+        TRUE ~ "Normal"
+      )
+    )
+}
+
+# 2. Aplicar y buscar los outliers en las dos tasas
+df_outliers <- df_clean %>%
+  detectar_outliers_iqr("Tasa_actividad") %>%
+  detectar_outliers_iqr("Tasa_paro")
+
+# 3. Filtrar y mostrar los registros atípicos en Tasa de Actividad
+outliers_actividad <- df_outliers %>%
+  filter(Outlier_actividad != "Normal") %>%
+  select(Periodo, Sexo, Edad, Tasa_actividad, Outlier_actividad)
+
+# Para visualizar los resultados en el informe (opcional)
+print("Outliers en Tasa de Actividad:")
+#knitr::kable(outliers_actividad)
+
+# 4. Los outliers se mostrarán automáticamente en tus box plots (puntos fuera de los bigotes)
+```
+```{r}
+
+reglaboxplot<-function(x){
+  if(all(is.na(x))){
+    return(rep(NA,length(x)))
+  }
+  xu<-quantile(x, 0.75, na.rm = TRUE)
+  xi<-quantile(x, 0.25, na.rm = TRUE)
+  IQR<-xu-xi
+  outliers<-if_else((x>xu+1.5*IQR)|(x<xi-1.5*IQR),T,F)
+  return(outliers)
+}
+
+# Ejemplo general
+lapply(split(df_clean, df_clean$grupo_edad), function(x) {
+  boxplot(x$variable_interes,
+          main = paste("Grupo de edad:", unique(x$grupo_edad)),
+          ylab = "Variable de interés")
+})
+
+
+```
+
 
 # Análisis de las tasas
 
@@ -392,15 +462,13 @@ brecha_relativa <- df_clean %>%
 
 ```{r, echo=FALSE}
 ggplot(brecha_relativa, aes(x = Periodo, y = Razon)) +
-  geom_line(color = "blue", linewidth = 1.2) +
-  geom_point(color = "red", size = 2) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "gray") +  # línea de igualdad
-  scale_y_continuous(breaks = seq(1, 1.5, by = 0.05)) +  # marcas cada 0.05
-  scale_x_continuous(breaks = seq(2006, 2024, by = 2)) +  # años cada 2
+  geom_line(linewidth = 1.2) +
+  scale_y_continuous(breaks = seq(1, 1.5, by = 0.05)) + 
+  scale_x_continuous(breaks = seq(2006, 2024, by = 2)) + 
   labs(
-    title = "Evolución de la razón Hombres/Mujeres",
+    title = "Evolución de la razón de la tasa de actividad Hombres/Mujeres",
     x = "Año",
-    y = "Razón (Hombres / Mujeres)"
+    y = "Razón tasa de actividad (Hombres / Mujeres)"
   ) +
   theme_minimal() +
   theme(
@@ -532,7 +600,7 @@ Por otro lado, la tasa de paro muestra un valor de p alto ($0.128$) lo que sugie
 
 # Conclusión
 
-Con las gráficas hemos observado que la tasa de actividad masculina es siempre superior, aunque se va reduciendo progresivamente. También se aprecia que las mayores diferencias se dan en los grupos de mediana edad que coinciden con las etapas de mayor carga familiar y laboral.
+Mediante el análisis gráfico se ha observado que la tasa de actividad masculina es siempre superior, aunque se va reduciendo progresivamente. También se aprecia que las mayores diferencias se dan en los grupos de mediana edad que coinciden con las etapas de mayor carga familiar y laboral.
 En términos de la composición del mercado laboral, se aprecia claramente las mujeres siguen mostrando una mayor inactividad y ocupación en el empleo aunque las diferencias se reducen gradualmente.
 
 
