@@ -127,11 +127,11 @@ La **tasa de paro** mide la proporción de la población activa que está desemp
 \end{equation}
 
 
-
 La **tasa de actividad** mide la participación de una población en el mercado laboral:
 \begin{equation}
 \text{Tasa de actividad}=\frac{\text{Activos}}{\text{Total}} \cdot 100
 \end{equation}
+
 <!-- Lo quitamos porque no lo usamos al final
 <!-- La **tasa de ocupación** muestra qué parte de la población total de referencia tiene un empleo: -->
 
@@ -187,7 +187,7 @@ df_clean<-df %>%
 
 ## Outliers
 
-Para identificar outliers se va a utilizar el método del rango intercuartílico (IQR).
+Para identificar outliers se va a utilizar el método del rango intercuartílico (IQR). Se obtiene que para la tasa de actividad no hay valores outliers, sin embargo, para la tasa de paro sí. Se tendrá en cuenta 
 
 ```{r,echo = FALSE}
 
@@ -252,7 +252,7 @@ df_clean %>% ggplot(aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
 En este primer gráfico se muestra la tasa de actividad para hombres y mujeres. Se observa una clara y pronunciada separación entre estas distribuciones. La mediana de la tasa de actividad para hombres es superior a la de las mujeres. Además, la caja del grupo masculino se sitúa por encima del grupo femenino.
 
 ```{r,echo = FALSE}
-df_outliers %>% 
+df_clean %>% 
   ggplot(aes(x = Sexo, y = Tasa_paro)) +
   
   geom_boxplot(aes(fill = Sexo), outlier.shape = NA) +
@@ -270,7 +270,7 @@ df_outliers %>%
          color = guide_legend(title = "Outliers")) + # Da un título a la leyenda de outliers
   
   labs(
-    title = "Distribución de la Tasa de Paro por Sexo con Outliers Filtrados",
+    title = "Distribución de la Tasa de Paro por Sexo (Análisis Global)",
     subtitle = "Los puntos atípicos corresponden al rango de edad de 16 a 24 años.",
     y = "Tasa de Paro (%)",
     x = NULL
@@ -292,14 +292,8 @@ En este bloque de código se construyen varias representaciones gráficas con el
 Agrupación de datos por periodo y por sexo
 ```{r, echo=FALSE}
 # Calculamos la media de la tasa de actividad para cada grupo
-# Usamos na.rm = TRUE para ignorar valores faltantes
 df_p_sexo <- df_clean %>% group_by(Periodo, Sexo) %>% summarise(tasa_actividad = mean(Tasa_actividad, na.rm = TRUE) #Hay que ignorar los valores NA
-                                                                , .groups = "drop") #hay que eliminar esas agrupaciones 
-
-#Que pretendemos? Calcular la media de la tasa de actividad de todos los grupos del df
-
-
-
+                                                                , .groups = "drop")
 ```
 
 ```{r, fig.width=6, fig.height=4, out.width="75%",echo=FALSE}
@@ -325,7 +319,7 @@ Tasa de actividad por edad y sexo
 # Agrupamos por Periodo, sexo y Edad
 
 ##Que pretendemos? Calcular la media de la tasa de actividad para cada combinación
-df_sexo_edad <- df_clean %>% group_by(Periodo, Sexo, Edad) %>% summarise(tasa_actividad = mean(Tasa_actividad, na.rm = TRUE),.groups = "drop")
+df_sexo_edad <- df_clean %>%  group_by(Periodo, Sexo, Edad) %>% summarise(tasa_actividad = mean(Tasa_actividad, na.rm = TRUE),.groups = "drop")
 
 ```
 
@@ -339,7 +333,7 @@ Como se observa en la gráfica, los hombres presentan tasas de actividad mucho m
 
 
 ```{r, echo=FALSE,fig.width=6, fig.height=4, out.width="75%"}
-df_paro_sexo <- df_clean %>% group_by(Periodo, Sexo) %>% summarise(tasa_paro = mean(Tasa_paro, na.rm = TRUE), .groups = "drop")
+df_paro_sexo <- df_clean %>% filter(Outlier_paro=="Normal")%>%  group_by(Periodo, Sexo) %>% summarise(tasa_paro = mean(Tasa_paro, na.rm = TRUE), .groups = "drop")
 
 ggplot(df_paro_sexo, aes(x = Periodo, y = tasa_paro, color = Sexo)) + geom_line(size=2) + scale_x_continuous(breaks = seq(2006, 2024, by = 2))+ labs(title = "Tasa de paro por sexo (2006–2024)", x = "Año", y = "Tasa de paro (%)") + theme_minimal()
 
@@ -351,7 +345,7 @@ Desde la crisis de 2008, la tasa de paro en ambos sexos ha ido aumentado progres
 El gráfico a continuación representa la evolución de la brecha de paro total.
 ```{r, echo=FALSE,fig.width=6, fig.height=4, out.width="75%"}
 # 1º crear una tabla con la variable brecha_paro 
-brecha <- df_clean %>% 
+brecha <- df_clean %>% filter(Outlier_paro=="Normal")%>% 
   select(Periodo, Edad,Sexo,Tasa_paro) %>% 
   pivot_wider(names_from = Sexo, values_from = Tasa_paro) %>% 
   mutate(brecha_paro=Mujeres-Hombres)
@@ -378,7 +372,7 @@ El gráfico previo representa la evolución de la brecha de paro total. En él s
 
 
 ```{r, echo=FALSE}
-brecha_edades <- df_clean %>% 
+brecha_edades <- df_clean %>%  filter(Outlier_paro=="Normal")%>% 
   select(Sexo, Edad, Periodo,Tasa_paro) %>% 
   pivot_wider(names_from = Sexo, values_from = Tasa_paro) %>% 
   mutate(brecha_paro=Mujeres-Hombres)
@@ -391,7 +385,7 @@ En este apartado se elaboran una serie de gráficos de barras destinados a anali
 
 ```{r, echo=FALSE}
 
-a1<- brecha_edades %>% filter(Periodo %in% 2024)
+a1<- brecha_edades %>% filter(Periodo %in% 2024) 
 
 library(ggplot2)
 library(dplyr)
@@ -566,7 +560,7 @@ Para validar estadísticamente las diferencias observadas ente las series tempor
 ```{r,echo = FALSE}
 
 test_actividad <- t.test(Tasa_actividad ~ Sexo, data = df_clean)
-test_paro <- t.test(Tasa_paro ~ Sexo, data = df_clean)
+test_paro <- t.test(Tasa_paro ~ Sexo, data = df_clean %>% filter(Outlier_paro=="Normal"))
 
 tabla_ttest <- data.frame(
   Tasa = c("Actividad", "Paro"),
