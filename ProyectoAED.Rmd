@@ -305,7 +305,7 @@ brechas_total <- brecha %>%
   )
 
 
-evo_brecha_total <- ggplot(brechas_total,aes(x=Periodo,y=brecha_paro_total)) + geom_line()+geom_point()+labs(title = "Evolución de la brecha de paro total",x="años",y="Brecha de tasa de paro")
+evo_brecha_total <- ggplot(brechas_total,aes(x=Periodo,y=brecha_paro_total)) + geom_line()+geom_point()+labs(title = "Evolución de la brecha de paro total",x="años",y="Brecha de tasa de paro")+ theme_minimal()
 evo_brecha_total
 
 ```
@@ -532,4 +532,15 @@ Por otro lado, la tasa de paro muestra un valor de p alto ($0.128$) lo que sugie
 
 # Conclusión
 
-Las conclusiones que se sacan en este proyecto en base a la cuestión analizada de si existe brecha en la tasa de actividad y de paro
+Con las gráficas hemos observado que la tasa de actividad masculina es siempre superior, aunque se va reduciendo progresivamente. También se aprecia que las mayores diferencias se dan en los grupos de mediana edad que coinciden con las etapas de mayor carga familiar y laboral.
+En términos de la composición del mercado laboral, se aprecia claramente las mujeres siguen mostrando una mayor inactividad y ocupación en el empleo aunque las diferencias se reducen gradualmente.
+
+
+Para completar las gráficas de una forma rigurosa se ha hecho una prueba de t de student en la que se ha obtenido como resultado que la dependencia entre la tasa de actividad y el sexo es estadísticamente significativo mientras que la tasa de paro y el sexo no lo es.
+Esto nos permite concluir que la brecha de género existe en el mercado laboral, no se debe a la dificultad de acceso al mercado laboral por parte de las mujeres sino que se explica más por la menor participación activa de las mujeres que podría venir de dinámicas de inclusión laboral ineficientes.
+
+Por tanto, con este análisis sobre la brecha de genero hemos podido detectar como esta brecha no se encuentra realmente en el desempleo, como es de creencia popular, sino en la participación activa. Pese a que las mujeres se han ido incrementando progresivamente en el mercado económico laboral, aun sufren muchas barreras a las que deben hacer frente. Esta dificultad es más clara en edad mas centrales. 
+
+La sociedad actual debería poner mas atención a esta brecha y, por ende, promover diferentes políticas que beneficien la conciliación laboral y fomenten la inclusión laboral femenina.
+
+
