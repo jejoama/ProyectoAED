@@ -63,6 +63,9 @@ pacman::p_load(
 Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos de la Encuesta de Población Activa (EPA), centrándose en la evolución histórica de la brecha de género en el mercado laboral español. Utilizando el ecosistema `tidyverse`, el estudio comienza con una limpieza y transformación de los datos empleando `dplyr` y el cálculo de Tasa de paro, actividad y ocupación, claves para el análisis. Seguido de la visualización con `ggplot2` para ilustrar la evolución temporal. Por último, se validan los resultados con pruebas de *t Student* para confirmar la significancia estadística de los resultados.
 
 La cuestión que queremos resolver en el trabajo es ver si hay relación entre la tasa de paro y de actividad con el sexo basándonos en la hipótesis de que existe una brecha de género en el mercado.
+Para este análisis nos hemos basado principalmente en las tasas de paro y de actividad por considerarlas los indicadores más representativos del merrcado laboral. Son los mejores indicadores porque permite entender tanto quién participa en el mercado laboral mediante la tasa de actividad como quién logra empleo dentro de él con la tasa de paro.
+
+
 
 Los datos se han obtenido en el INE a fecha de 21/10/2025.
 
@@ -529,4 +532,4 @@ Por otro lado, la tasa de paro muestra un valor de p alto ($0.128$) lo que sugie
 
 # Conclusión
 
-Las conclusiones que se sacan en este 
+Las conclusiones que se sacan en este proyecto en base a la cuestión analizada de si existe brecha en la tasa de actividad y de paro
