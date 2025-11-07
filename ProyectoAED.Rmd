@@ -132,7 +132,7 @@ La **tasa de actividad** mide la participación de una población en el mercado 
 \begin{equation}
 \text{Tasa de actividad}=\frac{\text{Activos}}{\text{Total}} \cdot 100
 \end{equation}
-
+<!-- Lo quitamos porque no lo usamos al final
 <!-- La **tasa de ocupación** muestra qué parte de la población total de referencia tiene un empleo: -->
 
 <!-- \begin{equation} -->
@@ -155,7 +155,7 @@ La limpieza de los datos a consistido en estos puntos:
 
 - **Imputación de NA a 0**: Los valores faltantes se concentran en categorías como Personas mayores en paro o que buscan su primer empleo. El INE suprime el dato por ser un valor insignificante, por lo que se opta por remplazar los valores nulos a 0 para no perder el resto de información válida de la instancia.
 
-- **Creación de tasas**: Se añaden las columnas `Tasa_paro`, `Tasa_actividad` y `Tasa_ocupacion` utilizando `mutate()` y las expresiones de la EPA (3), (4) y (5).
+- **Creación de tasas**: Se añaden las columnas `Tasa_paro` y `Tasa_actividad` utilizando `mutate()` y las expresiones de la EPA.
 
 - **Ordenación en factores**: Se ordena la columna `Edad` como un factor ordinal y la columna `Sexo` como factor nominal.
 
@@ -187,34 +187,42 @@ df_clean<-df %>%
 
 ## Outliers
 
-Para identificar outliers se va a utilizar el método del rango intercuartílico (IQR)
+Para identificar outliers se va a utilizar el método del rango intercuartílico (IQR).
 
 ```{r,echo = FALSE}
 
-detectar_outliers_iqr <- function(df, tasa) {
-  Q1 <- quantile(df[[tasa]], 0.25, na.rm = TRUE)
-  Q3 <- quantile(df[[tasa]], 0.75, na.rm = TRUE)
+detectar_outliers_IQR <- function(df, tasa) {
+  # Calcular los límites de IQR
+  x <- df[[tasa]]
+  Q1 <- quantile(x, 0.25, na.rm = TRUE)
+  Q3 <- quantile(x, 0.75, na.rm = TRUE)
   IQR_val <- Q3 - Q1
   limite_superior <- Q3 + 1.5 * IQR_val
   limite_inferior <- Q1 - 1.5 * IQR_val
 
-  df %>%
-    mutate(
-      !!paste0("Outlier_", sub("Tasa_", "", tasa)) := case_when(
-        .data[[tasa]] > limite_superior ~ "Atípico Superior",
-        .data[[tasa]] < limite_inferior ~ "Atípico Inferior",
-        TRUE ~ "Normal"
-      )
-    )
+  # Crear vector con etiquetas
+  etiqueta <- if_else(
+    x > limite_superior, "AtipicoSuperior",
+    if_else(x < limite_inferior, "AtipicoInferior", "Normal")
+  )
+
+  # Crear el nombre de la nueva columna
+  nombre_col <- paste0("Outlier_", sub("Tasa_", "", tasa))
+
+# Hacer la etiqueta como un factor
+  etiqueta <- factor(etiqueta,levels = c("AtipicoInferior", "Normal", "AtipicoSuperior"))
+  df[[nombre_col]] <- etiqueta
+
+  return(df)
 }
-
-# 2. Aplicar y buscar los outliers en las dos tasas
-df_outliers <- df_clean %>%
-  detectar_outliers_iqr("Tasa_actividad") %>%
-  detectar_outliers_iqr("Tasa_paro")
-
+# Se añade nuevas columnas al daframe con los valores Outliers
+df_clean <- df_clean %>%
+  detectar_outliers_IQR("Tasa_actividad") %>%
+  detectar_outliers_IQR("Tasa_paro")
 
 ```
+
+
 
 
 ```{r,echo = FALSE}
@@ -231,7 +239,7 @@ En las siguientes gráficas se va a estudiar la distribución general de las tas
 
 ```{r,echo = FALSE}
 df_clean %>% ggplot(aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
-  geom_boxplot() +
+  geom_boxplot() + guides(fill = "none")+
   labs(
     title = "Distribución de la Tasa de Actividad por Sexo (Análisis Global)",
     subtitle = "El boxplot visualiza la mediana, la dispersión y la asimetría de la brecha.",
@@ -244,17 +252,37 @@ df_clean %>% ggplot(aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
 En este primer gráfico se muestra la tasa de actividad para hombres y mujeres. Se observa una clara y pronunciada separación entre estas distribuciones. La mediana de la tasa de actividad para hombres es superior a la de las mujeres. Además, la caja del grupo masculino se sitúa por encima del grupo femenino.
 
 ```{r,echo = FALSE}
-df_outliers %>% ggplot(aes(x = Sexo, y = Tasa_paro)) +
-  geom_boxplot(aes(fill = Sexo)) +
+df_outliers %>% 
+  ggplot(aes(x = Sexo, y = Tasa_paro)) +
+  
+  geom_boxplot(aes(fill = Sexo), outlier.shape = NA) +
+  
+  geom_jitter(
+    # Filtra solo los outliers
+    data = . %>% filter(Outlier_paro != "Normal"),
+    # CLAVE 1: Mapear 'color' a una etiqueta constante para crear la leyenda
+    aes(color = Edad), 
+    width = 0.2,
+    alpha = 0.8 # Añadimos transparencia para mejor visualización
+  ) +
+  
+  guides(fill = "none", # Quita la leyenda 'Sexo' generada por aes(fill=Sexo)
+         color = guide_legend(title = "Outliers")) + # Da un título a la leyenda de outliers
+  
   labs(
-    title = "Distribución de la Tasa de Paro por Sexo (Análisis Global)",
-    subtitle = "El boxplot visualiza la mediana, la dispersión y la asimetría de la brecha.",
+    title = "Distribución de la Tasa de Paro por Sexo con Outliers Filtrados",
+    subtitle = "Los puntos atípicos corresponden al rango de edad de 16 a 24 años.",
     y = "Tasa de Paro (%)",
     x = NULL
-  )  + 
+  ) + 
   theme_minimal()
+
 ```
 A diferencia de la tasa de actividad, en este gráfico se aprecia una mayor superposición entre las distribuciones de ambos sexos. Las medianas de ambas distribuciones se encuentra más cercanas.
+
+A diferencia de la tasa de actividad dodne no se han detectado outliers, la tasa de paro muestra una alta concentración de valores atípicos en ambos sexos. Los puntos atípicos se han filtrado y coloreado según el rango de edad.
+
+Los valores atípicos en la tasa de paro están ligados a la variable de edad. Estos valores no son errores de registro sino la muestra del paro juvenil.
 
 ## Evolucion de la tasa de paro y de la brecha de paro por género
 
@@ -265,7 +293,6 @@ Agrupación de datos por periodo y por sexo
 ```{r, echo=FALSE}
 # Calculamos la media de la tasa de actividad para cada grupo
 # Usamos na.rm = TRUE para ignorar valores faltantes
-
 df_p_sexo <- df_clean %>% group_by(Periodo, Sexo) %>% summarise(tasa_actividad = mean(Tasa_actividad, na.rm = TRUE) #Hay que ignorar los valores NA
                                                                 , .groups = "drop") #hay que eliminar esas agrupaciones 
 
