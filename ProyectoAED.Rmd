@@ -13,7 +13,7 @@ simplesummary: |
   A Simple summary goes here.
 abstract: |
   Este estudio realiza un análisis exploratorio y estadístico de la Encuesta de Población Activa (EPA) para evaluar la evolución de la brecha de género en el mercado laboral español entre el 2000 y 2024.
-  Los resultados clave validados mediante pruebas de t de student, demuestran que la disparidad no reside en la tasa de paro sino en la tasa de actividad. 
+  Los resultados clave validados mediante pruebas de t de student, demuestran que la tasa de paro y de actividad dependen del sexo. 
 
 keywords: |
   Brecha de Género; Tasa de Actividad; Análisis de Series de Tiempo; t de Student.
@@ -60,18 +60,24 @@ pacman::p_load(
 
 
 # Introducción
-Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos de la Encuesta de Población Activa (EPA), centrándose en la evolución histórica de la brecha de género en el mercado laboral español. Utilizando el ecosistema `tidyverse`, el estudio comienza con una limpieza y transformación de los datos empleando `dplyr` y el cálculo de Tasa de paro, actividad y ocupación, claves para el análisis. Seguido de la visualización con `ggplot2` para ilustrar la evolución temporal. Por último, se validan los resultados con pruebas de *t Student* para confirmar la significancia estadística de los resultados.
+Este artículo presenta un enfoque en R para el Análisis Exploratorio de Datos de la Encuesta de Población Activa (EPA), centrándose en la evolución histórica de la brecha de género en el mercado laboral español. Utilizando el ecosistema `tidyverse`, el estudio comienza con una limpieza y transformación de los datos empleando `dplyr` y el cálculo de Tasa de paro y actividad, claves para el análisis. Seguido de la visualización con `ggplot2` para ilustrar la evolución temporal. Por último, se validan los resultados con pruebas de *t Student* para confirmar la significancia estadística de los resultados.
 
 La cuestión que queremos resolver en el trabajo es ver si hay relación entre la tasa de paro y de actividad con el sexo basándonos en la hipótesis de que existe una brecha de género en el mercado.
-Para este análisis nos hemos basado principalmente en las tasas de paro y de actividad por considerarlas los indicadores más representativos del merrcado laboral. Son los mejores indicadores porque permite entender tanto quién participa en el mercado laboral mediante la tasa de actividad como quién logra empleo dentro de él con la tasa de paro.
+Para este análisis nos hemos basado principalmente en las tasas de paro y de actividad por considerarlas los indicadores más representativos del mercado laboral. Son los mejores indicadores porque permite entender tanto quién participa en el mercado laboral mediante la tasa de actividad como quién logra empleo dentro de él con la tasa de paro.
 
 
 
-Los datos se han obtenido en el INE a fecha de 21/10/2025.
+Los datos se han obtenido del INE a fecha de 21/10/2025.
 
 # Exploración inicial
 
 ## Importación y verificación inicial
+
+```{r, include=FALSE}
+# Para comprobar la codificación del archivo
+guess_encoding("data/65948.csv")
+```
+
 
 La codificación de los datos brutos es `UFT-8` con una confianza del $100\%$, el archivo está delimitado por tabulaciones, se indica que el separador decimal es la coma y que los valores *NA* están codificados como `".."`.
 
@@ -86,7 +92,7 @@ Las variables del dataframe original son: Sexo, Edad, Relación con la actividad
 
 ## Valores faltantes
 
-Los valores NA se encuentran concentrados en la variable `Total`, mostrando una ausencia específica en las categorías de situación laboral relacionadas con el desempleo com ose muestra en la siguiente figura:
+Los valores NA se encuentran concentrados en la variable `Total`, mostrando una ausencia específica en las categorías de situación laboral relacionadas con el desempleo como se muestra en la siguiente figura:
 
 ```{r,echo = FALSE,fig.width=6, fig.height=4, out.width="100%"}
 df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% filter(is.na(Total)) %>% ggplot(aes(x=Situacion_Laboral))+geom_bar(aes(fill=Edad))+labs(
@@ -151,9 +157,9 @@ La limpieza de los datos a consistido en estos puntos:
 
 - **Se aplica `pivot_wider()`** utilizando los valores de la columna `Situacion_Laboral` para crear las nuevas columnas (`names_from`) y los valores numéricos de la columna `Total`.
 
-- **Renombrar variables**: Se renombra la columna "parados que buscan primer empleo" a un formato más corto `r "Parados_sin_exp"`
+- **Renombrar variables**: Se renombra la columna "parados que buscan primer empleo" a un formato más corto `r "ParadosSinExperiencia"`
 
-- **Imputación de NA a 0**: Los valores faltantes se concentran en categorías como Personas mayores en paro o que buscan su primer empleo. El INE suprime el dato por ser un valor insignificante, por lo que se opta por remplazar los valores nulos a 0 para no perder el resto de información válida de la instancia.
+- **Imputación de NA a 0**: Los valores faltantes se concentran en categorías como personas mayores en paro o que buscan su primer empleo. El INE suprime el dato por ser un valor insignificante, por lo que se opta por remplazar los valores NA a 0 para no perder el resto de información válida de la instancia.
 
 - **Creación de tasas**: Se añaden las columnas `Tasa_paro` y `Tasa_actividad` utilizando `mutate()` y las expresiones de la EPA.
 
@@ -187,7 +193,8 @@ df_clean<-df %>%
 
 ## Outliers
 
-Para identificar outliers se va a utilizar el método del rango intercuartílico (IQR). Se obtiene que para la tasa de actividad no hay valores outliers, sin embargo, para la tasa de paro sí. Se tendrá en cuenta 
+Para identificar outliers se va a utilizar el método del rango intercuartílico (IQR) ya que permite la detección de outliers sin asumir la normalidad de la distribución. 
+Se obtiene que para la tasa de actividad no hay valores outliers, sin embargo, para la tasa de paro sí. Se tendrá en cuenta este resultado para evitar trabajar con estos valores atípicos cuando se estudie la tasa de paro.
 
 ```{r,echo = FALSE}
 
@@ -226,6 +233,7 @@ df_clean <- df_clean %>%
 
 
 ```{r,echo = FALSE}
+# Guardar los datos
 write_csv(df_clean,file = "data/df_clean.csv")
 ```
 
@@ -237,7 +245,7 @@ write_csv(df_clean,file = "data/df_clean.csv")
 
 En las siguientes gráficas se va a estudiar la distribución general de las tasas a lo largo de todo el periodo y separado por sexo.
 
-```{r,echo = FALSE}
+```{r,echo = FALSE,fig.width=6, fig.height=4, out.width="100%"}
 df_clean %>% ggplot(aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
   geom_boxplot() + guides(fill = "none")+
   labs(
@@ -251,7 +259,7 @@ df_clean %>% ggplot(aes(x = Sexo, y = Tasa_actividad, fill = Sexo)) +
 
 En este primer gráfico se muestra la tasa de actividad para hombres y mujeres. Se observa una clara y pronunciada separación entre estas distribuciones. La mediana de la tasa de actividad para hombres es superior a la de las mujeres. Además, la caja del grupo masculino se sitúa por encima del grupo femenino.
 
-```{r,echo = FALSE}
+```{r,echo = FALSE,fig.width=6, fig.height=4, out.width="75%"}
 df_clean %>% 
   ggplot(aes(x = Sexo, y = Tasa_paro)) +
   
@@ -280,9 +288,9 @@ df_clean %>%
 ```
 A diferencia de la tasa de actividad, en este gráfico se aprecia una mayor superposición entre las distribuciones de ambos sexos. Las medianas de ambas distribuciones se encuentra más cercanas.
 
-A diferencia de la tasa de actividad dodne no se han detectado outliers, la tasa de paro muestra una alta concentración de valores atípicos en ambos sexos. Los puntos atípicos se han filtrado y coloreado según el rango de edad.
+A diferencia de la tasa de actividad donde no se han detectado outliers, la tasa de paro muestra una alta concentración de valores atípicos en ambos sexos. Los puntos atípicos se han filtrado y coloreado según el rango de edad.
 
-Los valores atípicos en la tasa de paro están ligados a la variable de edad. Estos valores no son errores de registro sino la muestra del paro juvenil.
+Los valores atípicos en la tasa de paro están ligados a la variable de edad. Estos valores no son errores de registro sino la muestra del paro juvenil. Estos valores outliers se omitirán cuando se haga análisis relacionados con la tasa de paro.
 
 ## Evolucion de la tasa de paro y de la brecha de paro por género
 
@@ -307,17 +315,12 @@ ggplot(df_p_sexo, aes(x = Periodo, y = tasa_actividad, color = Sexo)) + geom_lin
 
 
 La gráfica enseña la evolución de la tasa de actividad en España entre los años 2006 y 2024, diferenciada por sexo. Por un lado, la proporción de hombres es mucho mayor a la de mujeres, cosa que va ligada a que los hombres siempre han tenido mayor participicaion en muchos mas sectores, como lo puede ser la construcción, y a que las mujeres se ligan mas al cuidado familiar.
-    Pese a esto, la actividad masculina en 2008 se desacelera economicamnete, esto provocado por la crisis financiera que se vivió en la epoca. Es en 2017/18 que comienza su recuperación, pero nunca a los niveles previos a la crisis. En 2020, debido al Covid-19, se observa otra caida en la tendencía (porque el Covid-19 afectó a muchos sectores, como la industría por ejemplo). Aunque se observa también su recuperació, tampoco volvió a los nieveles previos de la crisis de 2008
-    por el otro lado, la tasa de actividad femenina se muestra, en el periodo, ascendente ya que han ido incorporandose cada vez mas en el mercado laboral español
+    Pese a esto, la actividad masculina en 2008 se desacelera economicamente, esto provocado por la crisis financiera que se vivió en la epoca. Es en 2017/18 que comienza su recuperación, pero nunca a los niveles previos a la crisis. En 2020, debido al Covid-19, se observa otra caida en la tendencía (porque el Covid-19 afectó a muchos sectores, como la industría por ejemplo). Aunque se observa también su recuperació, tampoco volvió a los nieveles previos de la crisis de 2008
+    por el otro lado, la tasa de actividad femenina se muestra, en el periodo, ascendente ya que han ido incorporandose cada vez mas en el mercado laboral español.
 
-
-
-
-Tasa de actividad por edad y sexo
 
 ```{r, echo=FALSE}
 # Agrupamos por Periodo, sexo y Edad
-
 ##Que pretendemos? Calcular la media de la tasa de actividad para cada combinación
 df_sexo_edad <- df_clean %>%  group_by(Periodo, Sexo, Edad) %>% summarise(tasa_actividad = mean(Tasa_actividad, na.rm = TRUE),.groups = "drop")
 
@@ -462,7 +465,7 @@ ggplot(brecha_relativa, aes(x = Periodo, y = Razon)) +
     plot.title = element_text(face = "bold")
   )
 ```
-Esta gráfica muestra cómo ha cambiado la relación entre la tasa de actividad de los hombres y la de las mujeres a lo largo del tiempo. Cada punto representa el cociente entre ambas tasas en un año determinado. Una razón superior a 1 indica que los hombres tienen mayor participación en el mercado laboral que las mujeres. Desde 2006, la razón ha descendido de forma sostenida, lo que refleja una reducción progresiva de la brecha de género. Aunque no se ha alcanzado la igualdad, las mujeres han incrementado su participación relativa. El pequeño repunte en 2024 sugiere una posible ralentización en esa convergencia o una proyección conservadora.
+Esta gráfica muestra cómo ha cambiado la relación entre la tasa de actividad de los hombres y la de las mujeres a lo largo del tiempo. Cada punto representa el cociente entre ambas tasas en un año determinado. Una razón superior a 1 indica que los hombres tienen mayor participación en el mercado laboral que las mujeres. Desde 2006, la razón ha descendido de forma sostenida, lo que refleja una reducción progresiva de la brecha de género. Aunque no se ha alcanzado la igualdad, las mujeres han incrementado su participación relativa.
 
 
 <!-- # ```{r} -->
@@ -492,7 +495,7 @@ Esta gráfica muestra cómo ha cambiado la relación entre la tasa de actividad 
 
 ## Composición del mercado laboral 
 
-En el siguiente gráfico se muestra la composición del mercado laboral, separando entre: Parados,Ocupados e Inactivos para cada grupo de edad, separado por sexo.
+En el siguiente gráfico se muestra la composición del mercado laboral, separando entre: Parados, Ocupados e Inactivos para cada grupo de edad, separado por sexo.
 
 ```{r, echo=FALSE}
 
@@ -580,7 +583,9 @@ kable(tabla_ttest,
 
 Como se observa en esta tabla, la tasa de actividad presenta un valor $p$ extremadamente bajo ($0.001$), lo que permite rechazar la hipótesis nula y por lo tanto, la tasa de actividad depende del sexo.
 
-Por otro lado, la tasa de paro muestra un valor de p alto ($0.128$) lo que sugiere que la tasa de paro no depende del sexo. 
+Por otro lado, la tasa de paro muestra un valor de p también bajo ($0.0227$) rechazando de la misma forma la hipótesis nula.
+
+Por lo tanto, tanto la tasa de paro como la tasa de actividad dependen del sexo de la persona.
 
 
 
@@ -590,10 +595,9 @@ Mediante el análisis gráfico se ha observado que la tasa de actividad masculin
 En términos de la composición del mercado laboral, se aprecia claramente las mujeres siguen mostrando una mayor inactividad y ocupación en el empleo aunque las diferencias se reducen gradualmente.
 
 
-Para completar las gráficas de una forma rigurosa se ha hecho una prueba de t de student en la que se ha obtenido como resultado que la dependencia entre la tasa de actividad y el sexo es estadísticamente significativo mientras que la tasa de paro y el sexo no lo es.
-Esto nos permite concluir que la brecha de género existe en el mercado laboral, no se debe a la dificultad de acceso al mercado laboral por parte de las mujeres sino que se explica más por la menor participación activa de las mujeres que podría venir de dinámicas de inclusión laboral ineficientes.
+Para completar las gráficas de una forma rigurosa se ha hecho una prueba de t de student en la que se ha obtenido como resultado que la dependencia entre la tasa de actividad y paro con el sexo es estadísticamente significativo, esto nos permite concluir que la brecha de género existe en el mercado laboral.
 
-Por tanto, con este análisis sobre la brecha de genero hemos podido detectar como esta brecha no se encuentra realmente en el desempleo, como es de creencia popular, sino en la participación activa. Pese a que las mujeres se han ido incrementando progresivamente en el mercado económico laboral, aun sufren muchas barreras a las que deben hacer frente. Esta dificultad es más clara en edad mas centrales. 
+Por tanto, con este análisis sobre la brecha de genero se ha podido detectar como esta brecha ha sido real en el intervalo de tiempo estudiado.
 
 La sociedad actual debería poner mas atención a esta brecha y, por ende, promover diferentes políticas que beneficien la conciliación laboral y fomenten la inclusión laboral femenina.
 
