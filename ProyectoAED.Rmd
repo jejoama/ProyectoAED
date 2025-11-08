@@ -67,6 +67,8 @@ Para este análisis nos hemos basado principalmente en las tasas de paro y de ac
 
 Los datos se han obtenido del INE a fecha de 21/10/2025.
 
+El código fuente completo y reproducible de este análisis se encuentra en este repositorio de [Github](https://github.com/jejoama/ProyectoAED.git).
+
 # Exploración inicial
 
 ## Importación y verificación inicial
