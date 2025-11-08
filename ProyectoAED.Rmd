@@ -275,7 +275,7 @@ df_clean %>%
   ) +
   
   guides(fill = "none", # Quita la leyenda 'Sexo' generada por aes(fill=Sexo)
-         color = guide_legend(title = "Outliers")) + # Da un título a la leyenda de outliers
+         color = guide_legend(title = "Outliers (años)")) + # Da un título a la leyenda de outliers
   
   labs(
     title = "Distribución de la Tasa de Paro por Sexo (Análisis Global)",
