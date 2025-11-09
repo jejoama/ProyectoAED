@@ -27,8 +27,8 @@ output:
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(
-  message = FALSE,     # Oculta mensajes de carga (por ejemplo, de librerías)
-  warning = FALSE     # Oculta advertencias
+  message = FALSE,  
+  warning = FALSE   
 )
 ```
 
@@ -93,10 +93,11 @@ Las variables originales del dataframe son: **Sexo, Edad, Relación con la activ
 Los valores NA se concentran en la variable `Total`, mostrando una ausencia específica en las categorías de situación laboral relacionadas con el desempleo, como se muestra en la siguiente figura:
 
 ```{r,echo = FALSE,fig.width=6, fig.height=4, out.width="90%"}
+# Representación de los valores faltantes con barras
 df %>% rename(Situacion_Laboral = "Relación con la actividad económica") %>% filter(is.na(Total)) %>% ggplot(aes(x=Situacion_Laboral))+geom_bar(aes(fill=Edad))+labs(
     title = "Frecuencia de los registros faltantes NA",
     subtitle = "Distribución por Situación Laboral y la edad",
-    y = "Valores faltantes", # Quitamos la etiqueta redundante del eje Y
+    y = "Valores faltantes", 
     x = "Número de Registros con NA"
   ) +
   theme_minimal()
@@ -147,7 +148,7 @@ La **tasa de actividad** mide la participación de una población en el mercado 
 
 # Limpieza de los datos
 
-La limpieza de los datos a consistido en estos puntos:
+La limpieza de los datos ha consistido en estos puntos:
 
 - **Renombrar columnas**: Utilizando `rename()` para acortar `"Relación con la actividad económica"` por ` "Situacion_Laboral"` para simplificar el manejo de columnas.
 
@@ -286,7 +287,7 @@ df_clean %>%
 ```
 A diferencia de la tasa de actividad, en este gráfico se aprecia una mayor superposición entre las distribuciones de ambos sexos. Las medianas de ambas distribuciones se encuentra más cercanas.
 
-A diferencia de la tasa de actividad donde no se han detectado outliers, la tasa de paro muestra una alta concentración de valores atípicos en ambos sexos. Los puntos atípicos se han filtrado y coloreado según el rango de edad.
+Mientras que la tasa de actividad no se han detectado outliers, la tasa de paro muestra una alta concentración de valores atípicos en ambos sexos. Los puntos atípicos se han filtrado y coloreado según el rango de edad.
 
 Los valores atípicos en la tasa de paro están ligados a la variable de edad. Estos valores no son errores de registro sino la muestra del paro juvenil. Estos valores outliers se omitirán cuando se haga análisis relacionados con la tasa de paro.
 
@@ -312,14 +313,14 @@ ggplot(df_p_sexo, aes(x = Periodo, y = tasa_actividad, color = Sexo)) + geom_lin
 ```
 
 
-La gráfica enseña la evolución de la tasa de actividad en España entre los años 2006 y 2024, diferenciada por sexo. Por un lado, la proporción de hombres es mucho mayor a la de mujeres, cosa que va ligada a que los hombres siempre han tenido mayor participación en muchos más sectores, como lo puede ser la construcción, y a que las mujeres se ligan mas al cuidado familiar.
+La gráfica muestra la evolución de la tasa de actividad en España entre los años 2006 y 2024, diferenciada por sexo. Por un lado, la proporción de hombres es mucho mayor a la de mujeres, cosa que va ligada a que los hombres siempre han tenido mayor participación en muchos más sectores, como lo puede ser la construcción, y a que las mujeres se ligan mas al cuidado familiar.
     Pese a esto, la actividad masculina en 2008 se desacelera economicamente, esto provocado por la crisis financiera que se vivió en la epoca. Es en 2017/18 que comienza su recuperación, pero nunca a los niveles previos a la crisis. En 2020, debido al Covid-19, se observa otra caida en la tendencía (porque el Covid-19 afectó a muchos sectores, como la industría por ejemplo). Aunque se observa también su recuperació, tampoco volvió a los nieveles previos de la crisis de 2008
     por el otro lado, la tasa de actividad femenina se muestra, en el periodo, ascendente ya que han ido incorporandose cada vez más en el mercado laboral español.
 
 
 ```{r, echo=FALSE}
 # Agrupamos por Periodo, sexo y Edad
-##Que pretendemos? Calcular la media de la tasa de actividad para cada combinación
+##pretendemos calcular la media de la tasa de actividad para cada combinación
 df_sexo_edad <- df_clean %>%  group_by(Periodo, Sexo, Edad) %>% summarise(tasa_actividad = mean(Tasa_actividad, na.rm = TRUE),.groups = "drop")
 
 ```
@@ -345,14 +346,14 @@ Desde la crisis de 2008, la tasa de paro en ambos sexos ha ido aumentado progres
 
 El gráfico a continuación representa la evolución de la brecha de paro total.
 ```{r, echo=FALSE,fig.width=6, fig.height=4, out.width="75%"}
-# 1º crear una tabla con la variable brecha_paro 
+# tabla con la variable brecha_paro 
 brecha <- df_clean %>% filter(Outlier_paro=="Normal")%>% 
   select(Periodo, Edad,Sexo,Tasa_paro) %>% 
   pivot_wider(names_from = Sexo, values_from = Tasa_paro) %>% 
   mutate(brecha_paro=Mujeres-Hombres)
 
 
-#2º Agrupar esas fechas por periodo, para asi no diferenciar entre grupos de edades y tener la brecha total
+# se agrupan esas fechas por periodo, para asi no diferenciar entre grupos de edades y tener la brecha total
 brechas_total <- brecha %>%
   group_by(Periodo) %>%
   summarise(
@@ -465,30 +466,6 @@ ggplot(brecha_relativa, aes(x = Periodo, y = Razon)) +
 ```
 Esta gráfica muestra cómo ha cambiado la relación entre la tasa de actividad de los hombres y la de las mujeres a lo largo del tiempo. Cada punto representa el cociente entre ambas tasas en un año determinado. Una razón superior a 1 indica que los hombres tienen mayor participación en el mercado laboral que las mujeres. Desde 2006, la razón ha descendido de forma sostenida, lo que refleja una reducción progresiva de la brecha de género. Aunque no se ha alcanzado la igualdad, las mujeres han incrementado su participación relativa.
 
-
-<!-- # ```{r} -->
-<!-- # # Filtrar para excluir el grupo de edad "70 y más años" -->
-<!-- # brecha_edad_filtrada <- df_clean %>% filter(Edad != "70 y más años") -->
-<!-- #  -->
-<!-- # # Graficar la razón Hombres/Mujeres por edad (sin el grupo de 70) -->
-<!-- # ggplot(brecha_edad_filtrada, aes(x = Periodo, y = Razon, color = Edad)) + -->
-<!-- #   geom_line(linewidth = 1) + -->
-<!-- #   geom_hline(yintercept = 1, linetype = "dashed", color = "gray") + -->
-<!-- #   scale_y_continuous(breaks = seq(0.5, 2, by = 0.1)) + -->
-<!-- #   scale_x_continuous(breaks = seq(2006, 2024, by = 2)) + -->
-<!-- #   labs( -->
-<!-- #     title = "Razón Hombres/Mujeres en la tasa de actividad por edad (sin 70+)", -->
-<!-- #     x = "Año", -->
-<!-- #     y = "Razón (Hombres / Mujeres)", -->
-<!-- #     color = "Edad" -->
-<!-- #   ) + -->
-<!-- #   theme_minimal() + -->
-<!-- #   theme(axis.text.x = element_text(angle = 45, hjust = 1)) -->
-<!-- #  -->
-<!-- #  -->
-<!-- # ``` -->
-
-
 # Distribución de la población en el mercado laboral
 
 ## Composición del mercado laboral 
@@ -521,7 +498,7 @@ graficos_composicion_por_año <- lapply(años1, function(año) {
     theme_minimal() +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1),
-      plot.margin = margin(15, 30, 15, 30)  # ← más espacio alrededor del gráfico
+      plot.margin = margin(15, 30, 15, 30) 
     ) +
     facet_wrap(~Sexo) # Añadir o quitar según quieras comparar hombres y mujeres
 })
@@ -530,7 +507,7 @@ graficos_composicion_por_año
 
 
 ```
-Del análisis de los gráficos se observa una estructura bastante estable del mercado laboral por edad y sexo a lo largo del tiempo, con ligeras variaciones asociadas a los ciclos económicos. En ambos sexos, el grupo central de edad (30-54 años) concentra la mayor proporción de personas ocupadas, mientras que los extremos —jóvenes y mayores— presentan una mayor presencia de inactivos. Las mujeres muestran sistemáticamente una menor proporción de ocupación y una mayor de inactividad en comparación con los hombres, aunque esta diferencia tiende a reducirse en los años más recientes. Asimismo, la proporción de personas paradas es más significativa en los grupos jóvenes, reflejando una mayor vulnerabilidad del empleo juvenil. En conjunto, los gráficos ponen de manifiesto que, pese a los avances en participación femenina y la estabilidad general del empleo en edades medias, persisten desigualdades de género e importantes diferencias intergeneracionales dentro del mercado laboral.
+Del análisis de los gráficos se observa una estructura bastante estable del mercado laboral por edad y sexo a lo largo del tiempo, con ligeras variaciones asociadas a los ciclos económicos. En ambos sexos, el grupo central de edad (30-54 años) concentra la mayor proporción de personas ocupadas, mientras que los extremos jóvenes y mayores presentan una mayor presencia de inactivos. Las mujeres muestran sistemáticamente una menor proporción de ocupación y una mayor de inactividad en comparación con los hombres, aunque esta diferencia tiende a reducirse en los años más recientes. Asimismo, la proporción de personas paradas es más significativa en los grupos jóvenes, reflejando una mayor vulnerabilidad del empleo juvenil. En conjunto, los gráficos ponen de manifiesto que, pese a los avances en participación femenina y la estabilidad general del empleo en edades medias, persisten desigualdades de género e importantes diferencias intergeneracionales dentro del mercado laboral.
 
 Estas gráficas, también ponen de manifiesto un proceso de envejecimiento del desempleo y una convergencia progresiva entre hombres y mujeres en la estructura interna del paro, aunque todavía persisten diferencias derivadas de los roles laborales y sociales tradicionales. Mientras los hombres mayores ganan peso dentro del paro total por el retraso en la jubilación, las mujeres siguen mostrando una mayor vulnerabilidad en las edades centrales, reflejando las desigualdades de género que aún caracterizan el mercado laboral español.
 
@@ -581,7 +558,7 @@ kable(tabla_ttest,
 
 Como se observa en esta tabla, la tasa de actividad presenta un valor $p$ extremadamente bajo ($0.001$), lo que permite rechazar la hipótesis nula y por lo tanto, hay indicios estadísticos de que la tasa de actividad depende del sexo.
 
-Por otro lado, la tasa de paro muestra un valor de p también bajo ($0.0227$) rechazando de la misma forma la hipótesis nula.
+Por otro lado, la tasa de paro muestra un valor de p también bajo ($0.023$) rechazando de la misma forma la hipótesis nula.
 
 Por lo tanto, el análisis muestra argumentos estadísticos suficientes como para afirmar con un $95\%$ de nivel de confianza que existe una dependencia significativa entre el sexo y la tasa de paro y actividad.
 
